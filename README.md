@@ -2,8 +2,9 @@
 
 A 5-agent system for running projects with AI coding tools. Works with Claude Code, Cursor, Copilot, Windsurf, Gemini CLI, Codex, Devin, and Replit. Each agent has a soul, an identity, and clear boundaries. Drop this into any project and start shipping.
 
-![5 agents running in parallel](screenshot.png)
-<!-- Replace screenshot.png with your 5-terminal screenshot -->
+![5 agents running in parallel]
+<img width="1178" height="815" alt="Screenshot 2026-03-28 at 12 00 03 AM" src="https://github.com/user-attachments/assets/46b776b9-7b63-4af4-b935-8a85af0526da" />
+
 
 ## The Setup
 
