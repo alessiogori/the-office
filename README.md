@@ -104,6 +104,10 @@ This is how I run [theainativepm.com](https://theainativepm.com). Job board, res
 
 I teach this setup in my free Claude Code course: [theainativepm.com/modules](https://theainativepm.com/modules)
 
+---
+
+If this helped you ship faster, give it a ⭐ — it helps other devs find this system.
+
 ## License
 
 MIT — use it however you want.
