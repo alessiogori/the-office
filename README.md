@@ -56,20 +56,17 @@ This project uses a multi-agent system. Each agent has a defined role, personali
 4. When in doubt, check shared-context/THESIS.md for alignment.
 ```
 
-**Step 2:** Copy the agent folders and shared context into your project:
+**Step 2:** Download the agent files:
+1. Go to [this repo on GitHub](https://github.com/anmolgupta824/ai-native-agents)
+2. Click the green **Code** button → **Download ZIP**
+3. Unzip it and copy these two folders into your project:
+   - `agents/` → `your-project/agents/`
+   - `shared-context/` → `your-project/shared-context/`
 
-```bash
-# Grab the agent definitions and shared context
-curl -sL https://github.com/anmolgupta824/ai-native-agents/archive/main.tar.gz | tar xz
-cp -r ai-native-agents-main/agents/ your-project/agents/
-cp -r ai-native-agents-main/shared-context/ your-project/shared-context/
-rm -rf ai-native-agents-main
-```
-
-**Step 3:** Edit `shared-context/` files to match your project:
-- `THESIS.md` — your vision and beliefs
-- `ROADMAP.md` — your current roadmap
-- `BRAND-GUIDE.md` — your voice, tone, and style
+**Step 3:** Open the `shared-context/` folder in your project and edit the files to match your project:
+- `THESIS.md` — replace with your vision and beliefs
+- `ROADMAP.md` — replace with your current roadmap
+- `BRAND-GUIDE.md` — replace with your voice, tone, and style
 
 **Step 4:** Open 5 terminals and start each agent:
 
