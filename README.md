@@ -1,204 +1,216 @@
-# AI-Native Agents
+# The Office
 
-A 5-agent system for running projects with AI coding tools. Works with Claude Code, Cursor, Copilot, Windsurf, Gemini CLI, Codex, Devin, and Replit. Each agent has a soul, an identity, and clear boundaries. Drop this into any project and start shipping.
+Un sistema multi-agente per gestire progetti con AI coding tools. Funziona con Claude Code, Cursor, Copilot, Windsurf, Gemini CLI, Codex, Devin e Replit. Ogni agente ha un'anima, un'identità e confini precisi. Aggiungilo a qualsiasi progetto e inizia a spedire.
 
-## 5 agents. 5 terminals. 1 shared context. Zero standups.
+## 6 agenti. 6 terminali. 1 contesto condiviso. Zero standup.
 
-<img width="1178" alt="5 agents running in parallel — CEO, Product, Marketing, Engineer, and Tester each in their own Claude Code terminal" src="screenshot.png" />
-
-> Each agent reads its own SOUL.md at startup. The CEO sets direction. Product owns the roadmap. Marketing writes content. Engineering builds. The Tester breaks things. They coordinate through shared files, not meetings.
+> Alessio dà la direzione. Walter gestisce il roadmap. Veronica scrive i contenuti. Stefano costruisce. Alessandra giudica ogni pagina senza pietà. Marwen rompe tutto prima che lo facciano gli utenti. Si coordinano tramite file, non riunioni.
 
 ---
 
-## How It Works
+## Come funziona
 
-Each agent has three files:
+Ogni agente ha tre file fondamentali:
 
-- **SOUL.md** — how the agent thinks, what it cares about, what it refuses to do
-- **IDENTITY.md** — who it is, its role, its access boundaries
-- **HEARTBEAT.md** — what it's working on right now, updated every session
+- **SOUL.md** — come pensa, cosa valorizza, cosa si rifiuta di fare
+- **IDENTITY.md** — ruolo, confini di accesso, con chi lavora
+- **HEARTBEAT.md** — su cosa sta lavorando adesso, aggiornato ogni sessione
 
-Agents can't access each other's domains. The engineer can't touch marketing. The product lead can't write code. The tester can read code but can't edit it. Same boundaries you'd set on a real team.
+Gli agenti non possono accedere ai domini altrui. Stefano non tocca il marketing. Walter non scrive codice. Alessandra legge il frontend ma non lo modifica. Marwen legge tutto ma non edita niente. Gli stessi confini che imporrestia un team reale.
 
-## What You Need
+## Il pipeline
 
-These folders go into your project:
+```
+Walter (Product) → spec
+        ↓
+Stefano (Engineer) → build
+        ↓
+Alessandra (UI/UX) → Playwright headless + ricerca mercato → APPROVED / REJECTED
+        ↓
+Marwen (Tester) → QA funzionale
+        ↓
+Produzione
+```
 
-| Folder/File | What it does |
-|-------------|-------------|
-| `agents/` | The 5 agent definitions (SOUL.md, IDENTITY.md, HEARTBEAT.md each) |
-| `shared-context/` | THESIS.md, ROADMAP.md, BRAND-GUIDE.md — read by all agents |
-| `CLAUDE.md` | Agent rules and role definitions (add to your existing one) |
+Niente va in produzione senza passare da Alessandra e Marwen.
+
+## Gli agenti
+
+| Agente | Nome | Ruolo | File di log |
+|--------|------|-------|-------------|
+| CEO | Alessio | Strategia, decisioni finali, override | — |
+| Engineer | Stefano | Build, bug fix, deploy | `BUILD-LOG.md` |
+| Product | Walter | Specs, roadmap, priorità | `BACKLOG.md` |
+| Marketing | Veronica | Contenuti, brand, crescita | `CONTENT-CALENDAR.md` |
+| UI/UX Specialist | Alessandra | Review visivo, Playwright headless, standard di mercato | `UI-REVIEW-LOG.md` |
+| Tester | Marwen | QA, bug reporting, quality enforcement | `BUG-LOG.md` |
+
+## Cosa ti serve
+
+Queste cartelle vanno nel tuo progetto:
+
+| Cartella/File | Cosa fa |
+|---------------|---------|
+| `agents/` | Le definizioni dei 6 agenti (SOUL.md, IDENTITY.md, HEARTBEAT.md ciascuno) |
+| `shared-context/` | THESIS.md, ROADMAP.md, BRAND-GUIDE.md — letti da tutti gli agenti |
+| `CLAUDE.md` | Regole e ruoli degli agenti (aggiungilo al tuo esistente) |
 
 ## Quick Start
 
-### Option 1: Add to your existing project (recommended)
+### Opzione 1: Aggiungi a un progetto esistente (consigliato)
 
-Already have a project with its own CLAUDE.md? Just add the agent system to it.
+Hai già un progetto con il suo CLAUDE.md? Aggiungi solo il sistema agenti.
 
-**Step 1:** Add agent rules to your project's `CLAUDE.md`:
+**Step 1:** Aggiungi le regole agenti al `CLAUDE.md` del tuo progetto:
 
 ```markdown
-## Multi-Agent System
-This project uses a multi-agent system. Each agent has a defined role, personality, and access boundaries.
+## Sistema Multi-Agente
 
-### Agent Roles
-- **CEO** — strategic oversight, final decisions. Access: everything. Config: agents/ceo/
-- **Engineer** — build features, fix bugs, deploy. Access: code only. Config: agents/engineer/
-- **Product** — strategy, roadmap, specs. Access: product docs only. Config: agents/product/
-- **Marketing** — content, brand, growth. Access: marketing/ only. Config: agents/marketing/
-- **Tester** — QA, bug reporting. Access: read all code, write test reports only. Config: agents/tester/
+Questo progetto usa un sistema multi-agente. Ogni agente ha ruolo, personalità e confini di accesso definiti.
 
-### Rules
-1. Agents stay in their lane. No crossing access boundaries.
-2. Every agent reads their SOUL.md and IDENTITY.md at startup.
-3. HEARTBEAT.md gets updated at the end of every session.
-4. When in doubt, check shared-context/THESIS.md for alignment.
+### Ruoli
+- **CEO (Alessio)** — supervisione strategica, decisioni finali. Accesso: tutto. Config: agents/ceo/
+- **Engineer (Stefano)** — build, bug fix, deploy. Accesso: solo codice. Config: agents/engineer/
+- **Product (Walter)** — strategia, roadmap, specs. Accesso: solo docs prodotto. Config: agents/product/
+- **Marketing (Veronica)** — contenuti, brand, crescita. Accesso: solo marketing/. Config: agents/marketing/
+- **UI/UX Specialist (Alessandra)** — review visivo, Playwright headless, standard di mercato. Accesso: legge frontend, scrive UI-REVIEW-LOG.md. Config: agents/uiux/
+- **Tester (Marwen)** — QA, bug reporting. Accesso: legge tutto, scrive solo report. Config: agents/tester/
+
+### Regole
+1. Ogni agente rimane nel suo dominio.
+2. Ogni agente legge SOUL.md e IDENTITY.md all'avvio.
+3. HEARTBEAT.md viene aggiornato a fine sessione.
+4. In caso di dubbio, controlla shared-context/THESIS.md.
 ```
 
-**Step 2:** Download the agent files:
-1. Go to [this repo on GitHub](https://github.com/anmolgupta824/ai-native-agents)
-2. Click the green **Code** button → **Download ZIP**
-3. Unzip it and copy these two folders into your project:
-   - `agents/` → `your-project/agents/`
-   - `shared-context/` → `your-project/shared-context/`
+**Step 2:** Scarica i file agente:
+1. Vai su [questo repo su GitHub](https://github.com/alessiogori/the-office)
+2. Clicca il bottone verde **Code** → **Download ZIP**
+3. Decomprimi e copia queste due cartelle nel tuo progetto:
+   - `agents/` → `tuo-progetto/agents/`
+   - `shared-context/` → `tuo-progetto/shared-context/`
 
-**Step 3:** Open the `shared-context/` folder in your project and edit the files to match your project:
-- `THESIS.md` — replace with your vision and beliefs
-- `ROADMAP.md` — replace with your current roadmap
-- `BRAND-GUIDE.md` — replace with your voice, tone, and style
+**Step 3:** Apri la cartella `shared-context/` e personalizza i file:
+- `THESIS.md` — sostituisci con la tua visione e i tuoi principi
+- `ROADMAP.md` — sostituisci con il tuo roadmap attuale
+- `BRAND-GUIDE.md` — sostituisci con la tua voce, tono e stile
 
-**Step 4:** Open 5 terminals and start each agent:
+**Step 4:** Apri 6 terminali e avvia ogni agente:
 
 ```bash
-# Terminal 1: CEO
-claude --resume "You are the CEO agent. Read agents/ceo/SOUL.md and agents/ceo/IDENTITY.md"
+# Terminale 1: CEO
+claude "Sei Alessio, il CEO. Leggi agents/ceo/SOUL.md e agents/ceo/IDENTITY.md. Controlla i HEARTBEAT.md di tutti gli agenti e imposta le priorità di oggi."
 
-# Terminal 2: Engineer
-claude --resume "You are the Engineer agent. Read agents/engineer/SOUL.md and agents/engineer/IDENTITY.md"
+# Terminale 2: Engineer
+claude "Sei Stefano, l'Engineer. Leggi agents/engineer/SOUL.md e agents/engineer/IDENTITY.md. Controlla BUILD-LOG.md e inizia a costruire."
 
-# Terminal 3: Product
-claude --resume "You are the Product agent. Read agents/product/SOUL.md and agents/product/IDENTITY.md"
+# Terminale 3: Product
+claude "Sei Walter, il Product Lead. Leggi agents/product/SOUL.md e agents/product/IDENTITY.md. Controlla BACKLOG.md e affina la spec prioritaria."
 
-# Terminal 4: Marketing
-claude --resume "You are the Marketing agent. Read agents/marketing/SOUL.md and agents/marketing/IDENTITY.md"
+# Terminale 4: Marketing
+claude "Sei Veronica, il Marketing Lead. Leggi agents/marketing/SOUL.md e agents/marketing/IDENTITY.md. Controlla CONTENT-CALENDAR.md e scrivi il prossimo post."
 
-# Terminal 5: Tester
-claude --resume "You are the Tester agent. Read agents/tester/SOUL.md and agents/tester/IDENTITY.md"
+# Terminale 5: UI/UX Specialist
+claude "Sei Alessandra, la UI/UX Specialist. Leggi agents/uiux/SOUL.md e agents/uiux/IDENTITY.md. Controlla cosa ha spedito Stefano e avvia Playwright headless su quelle pagine."
+
+# Terminale 6: Tester
+claude "Sei Marwen, il Tester. Leggi agents/tester/SOUL.md e agents/tester/IDENTITY.md. Controlla cosa ha passato Alessandra e inizia i test funzionali."
 ```
 
-Done. Each agent loads its own soul and stays in its lane.
+Fatto. Ogni agente carica la sua anima e rimane nel suo dominio.
 
-### Option 2: Start a new project with agents built in
+### Opzione 2: Parti da zero con gli agenti già integrati
 
-Starting fresh? Clone the whole repo and customize from there:
+Stai iniziando un nuovo progetto? Clona il repo e personalizza da lì:
 
 ```bash
-git clone https://github.com/anmolgupta824/ai-native-agents.git my-project
-cd my-project
+git clone https://github.com/alessiogori/the-office.git mio-progetto
+cd mio-progetto
 
-# Edit shared-context/ files to match your project
-# Then open 5 terminals and launch agents (see Step 4 above)
+# Modifica i file in shared-context/ per il tuo progetto
+# Poi apri 6 terminali e lancia gli agenti (vedi Step 4 sopra)
 ```
 
-## Project Structure
+## Struttura del progetto
 
 ```
-your-project/
-├── CLAUDE.md                  ← your existing config + agent rules
+tuo-progetto/
+├── CLAUDE.md                    ← la tua config esistente + regole agenti
 ├── agents/
-│   ├── ceo/                   ← strategic oversight, final calls
+│   ├── ceo/                     ← Alessio — supervisione strategica
 │   │   ├── SOUL.md
 │   │   ├── IDENTITY.md
 │   │   └── HEARTBEAT.md
-│   ├── engineer/              ← builds features, fixes bugs, deploys
+│   ├── engineer/                ← Stefano — build, fix, deploy
 │   │   ├── SOUL.md
 │   │   ├── IDENTITY.md
 │   │   ├── HEARTBEAT.md
 │   │   └── BUILD-LOG.md
-│   ├── product/               ← strategy, roadmap, specs
+│   ├── product/                 ← Walter — strategia, roadmap, specs
 │   │   ├── SOUL.md
 │   │   ├── IDENTITY.md
 │   │   ├── HEARTBEAT.md
 │   │   └── BACKLOG.md
-│   ├── marketing/             ← content, brand, growth
+│   ├── marketing/               ← Veronica — contenuti, brand, crescita
 │   │   ├── SOUL.md
 │   │   ├── IDENTITY.md
 │   │   ├── HEARTBEAT.md
 │   │   └── CONTENT-CALENDAR.md
-│   └── tester/                ← QA, breaks things on purpose
+│   ├── uiux/                    ← Alessandra — review visivo, Playwright, standard di mercato
+│   │   ├── SOUL.md
+│   │   ├── IDENTITY.md
+│   │   ├── HEARTBEAT.md
+│   │   └── UI-REVIEW-LOG.md
+│   └── tester/                  ← Marwen — QA, rompe tutto prima degli utenti
 │       ├── SOUL.md
 │       ├── IDENTITY.md
 │       ├── HEARTBEAT.md
 │       ├── BUG-LOG.md
 │       └── TEST-CHECKLIST.md
 └── shared-context/
-    ├── THESIS.md              ← what we believe
-    ├── ROADMAP.md             ← where we're going
-    └── BRAND-GUIDE.md         ← how we sound
+    ├── THESIS.md                ← cosa crediamo
+    ├── ROADMAP.md               ← dove stiamo andando
+    └── BRAND-GUIDE.md           ← come suoniamo
 ```
 
-**Also included in this repo (not needed in your project):**
+**Incluso in questo repo (non necessario nel tuo progetto):**
 
 ```
-ai-native-agents/
-├── AGENTS.md                  ← config for Cursor, Copilot, Windsurf, etc.
-├── GEMINI.md                  ← config for Gemini CLI
-├── examples/
-│   ├── product/sample-prd.md
-│   ├── marketing/sample-content-calendar.md
-│   └── engineering/sample-build-log.md
-└── LICENSE
+the-office/
+├── AGENTS.md                    ← config per Cursor, Copilot, Windsurf, ecc.
+├── GEMINI.md                    ← config per Gemini CLI
+└── examples/
+    ├── product/sample-prd.md
+    ├── marketing/sample-content-calendar.md
+    └── engineering/sample-build-log.md
 ```
 
 ## Slash Commands
 
-| Command | What it does |
-|---------|-------------|
-| `/startup` | Pick your role and load context |
-| `/engineer` | Switch to Engineer agent |
-| `/product` | Switch to Product agent |
-| `/marketing` | Switch to Marketing agent |
-| `/tester-agent` | Switch to Tester agent |
-| `/session` | Update your section in the shared session file |
-| `/wrap-up` | End of day summary across all agents |
+| Comando | Cosa fa |
+|---------|---------|
+| `/startup` | Scegli il tuo ruolo e carica il contesto |
+| `/engineer` | Passa all'agente Stefano |
+| `/product` | Passa all'agente Walter |
+| `/marketing` | Passa all'agente Veronica |
+| `/tester-agent` | Passa all'agente Marwen |
+| `/session` | Aggiorna la tua sezione nel file di sessione condiviso |
+| `/wrap-up` | Riepilogo di fine giornata cross-agente |
 
-## The Conflict is the Feature
+## Il conflitto è la feature
 
-The tester files bugs against the engineer. The product lead rejects features that aren't on the roadmap. The CEO overrides everyone because that's what CEOs do.
+Alessandra rimanda le pagine indietro a Stefano perché fanno schifo — con prove e soluzioni concrete. Marwen apre bug contro l'engineer senza sconti. Walter rifiuta le feature che non sono sul roadmap. Alessio fa override di tutti perché è il CEO.
 
-This isn't a bug. It's how real teams work. The tension produces better output.
+Non è un problema. È come funzionano i team veri. La tensione produce output migliore.
 
-## Examples
+## Altri AI tool
 
-Check the `examples/` folder to see what each agent actually produces:
+Questo repo include file di configurazione per altri tool:
+- `AGENTS.md` — funziona con Cursor, Copilot, Windsurf, Codex, Devin, Replit
+- `GEMINI.md` — funziona con Gemini CLI
 
-- `examples/product/sample-prd.md` — a PRD generated by the Product agent
-- `examples/marketing/sample-content-calendar.md` — a content calendar from the Marketing agent
-- `examples/engineering/sample-build-log.md` — a build log from the Engineer agent
+Copia il file rilevante nel tuo progetto se usi quei tool.
 
-## Other AI Tools
+## Licenza
 
-This repo also includes config files for other AI coding tools:
-- `AGENTS.md` — works with Cursor, Copilot, Windsurf
-- `GEMINI.md` — works with Gemini CLI
-
-Copy the relevant file into your project if you use those tools.
-
-## Context Management
-
-Want daily session tracking and automatic context restoration? See [claude-context-manager](https://github.com/anmolgupta824/claude-context-manager) — pairs perfectly with this agent system.
-
-## Learn More
-
-This is how I run [theainativepm.com](https://theainativepm.com). Job board, resume kit, interview prep, weekly digest. One person, five agents.
-
-I teach this setup in my free Claude Code course: [theainativepm.com/modules](https://theainativepm.com/modules)
-
----
-
-If this helped you ship faster, give it a star — it helps other devs find this system.
-
-## License
-
-MIT — use it however you want.
+MIT — usalo come vuoi.
