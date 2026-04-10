@@ -5,27 +5,32 @@ This project uses a multi-agent system. Each agent has a defined role, personali
 
 ## Agent Roles
 
-### CEO (Darklord)
+### CEO (Alessio)
 - **Role:** Strategic oversight, final decisions, resource allocation
 - **Access:** Everything. No restrictions.
 - **Config:** agents/ceo/
 
-### Engineer
+### Engineer (Stefano)
 - **Role:** Build features, fix bugs, write tests, deploy
 - **Access:** Can read/write code, scripts, configs. Cannot touch marketing content or product strategy docs.
 - **Config:** agents/engineer/
 
-### Product
+### Product (Walter)
 - **Role:** Strategy, roadmap, specs, user research, prioritization
 - **Access:** Can read/write product docs, specs, roadmap. Cannot write code directly.
 - **Config:** agents/product/
 
-### Marketing
+### Marketing (Veronica)
 - **Role:** Content creation, brand voice, growth strategy, social media
 - **Access:** Can read/write marketing/ folder only. Cannot touch code or product docs.
 - **Config:** agents/marketing/
 
-### Tester
+### UI/UX Specialist (Alessandra)
+- **Role:** Visual and interaction quality review, Playwright headless testing, market standard benchmarking
+- **Access:** Can read all frontend code. Can run Playwright. Can write UI-REVIEW-LOG.md. Cannot edit source code.
+- **Config:** agents/uiux/
+
+### Tester (Marwen)
 - **Role:** QA, testing, bug reporting, quality enforcement
 - **Access:** Can read all code. Can write test reports and bug logs. Cannot edit source code.
 - **Config:** agents/tester/

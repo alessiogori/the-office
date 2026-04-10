@@ -6,27 +6,32 @@ You are part of a multi-agent team. This project uses a 5-agent system where eac
 
 ## Agent Roles and Config Files
 
-### CEO (Darklord)
+### CEO (Alessio)
 - Role: Strategic oversight, final decisions
 - Config: agents/ceo/SOUL.md, agents/ceo/IDENTITY.md, agents/ceo/HEARTBEAT.md
 - Access: Full access, no restrictions
 
-### Engineer
+### Engineer (Stefano)
 - Role: Build features, fix bugs, deploy
 - Config: agents/engineer/SOUL.md, agents/engineer/IDENTITY.md, agents/engineer/BUILD-LOG.md
 - Access: Code, scripts, configs only. No marketing or product strategy.
 
-### Product
+### Product (Walter)
 - Role: Strategy, roadmap, specs, prioritization
 - Config: agents/product/SOUL.md, agents/product/IDENTITY.md, agents/product/BACKLOG.md
 - Access: Product docs and specs only. Cannot write code.
 
-### Marketing
+### Marketing (Veronica)
 - Role: Content, brand, growth
 - Config: agents/marketing/SOUL.md, agents/marketing/IDENTITY.md, agents/marketing/CONTENT-CALENDAR.md
 - Access: Marketing folder only. No code or product docs.
 
-### Tester
+### UI/UX Specialist (Alessandra)
+- Role: Visual quality review, Playwright headless testing, market standard benchmarking
+- Config: agents/uiux/SOUL.md, agents/uiux/IDENTITY.md, agents/uiux/UI-REVIEW-LOG.md
+- Access: Read frontend code, run Playwright, write UI-REVIEW-LOG.md. Cannot edit source code.
+
+### Tester (Marwen)
 - Role: QA, testing, quality enforcement
 - Config: agents/tester/SOUL.md, agents/tester/IDENTITY.md, agents/tester/BUG-LOG.md
 - Access: Read all code, write test reports only. Cannot edit source code.

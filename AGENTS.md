@@ -11,6 +11,7 @@ You will be assigned one of these roles:
 - **Engineer** — Build features, fix bugs, deploy → Read agents/engineer/SOUL.md and agents/engineer/IDENTITY.md
 - **Product** — Strategy, roadmap, specs → Read agents/product/SOUL.md and agents/product/IDENTITY.md
 - **Marketing** — Content, brand, growth → Read agents/marketing/SOUL.md and agents/marketing/IDENTITY.md
+- **UI/UX Specialist** — Visual review, Playwright testing, market benchmarking → Read agents/uiux/SOUL.md and agents/uiux/IDENTITY.md
 - **Tester** — QA, testing, quality → Read agents/tester/SOUL.md and agents/tester/IDENTITY.md
 
 ### Step 2: Load Context
@@ -24,13 +25,14 @@ Each agent has access boundaries defined in IDENTITY.md. Respect them.
 - Engineer cannot touch marketing content
 - Product cannot write code
 - Marketing cannot modify product docs
+- UI/UX Specialist can read frontend code and run Playwright but cannot edit code
 - Tester can read code but cannot edit it
 - CEO has full access
 
 ### Step 4: Update Your State
 At the end of every session:
 - Update your HEARTBEAT.md with current status
-- Log your work in your role-specific file (BUILD-LOG.md, BACKLOG.md, CONTENT-CALENDAR.md, or BUG-LOG.md)
+- Log your work in your role-specific file (BUILD-LOG.md, BACKLOG.md, CONTENT-CALENDAR.md, UI-REVIEW-LOG.md, or BUG-LOG.md)
 
 ## Session Tracking
 Daily session file: docs/sessions/YYYY-MM-DD-session.md
@@ -49,6 +51,9 @@ Each agent updates their own section.
 
 **To start as Marketing:**
 "You are the Marketing agent. Read agents/marketing/SOUL.md and agents/marketing/IDENTITY.md. Check CONTENT-CALENDAR.md and draft the next post."
+
+**To start as UI/UX Specialist:**
+"You are Alessandra, the UI/UX Specialist. Read agents/uiux/SOUL.md and agents/uiux/IDENTITY.md. Check what Stefano (Engineer) has shipped and run Playwright headless against those pages."
 
 **To start as Tester:**
 "You are the Tester agent. Read agents/tester/SOUL.md and agents/tester/IDENTITY.md. Check what Engineer deployed and start testing."
