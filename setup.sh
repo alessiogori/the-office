@@ -450,3 +450,29 @@ substitute_names "$SCRIPT_DIR/agents/tester/SOUL.md"     "$TARGET_DIR/agents/tes
 substitute_names "$SCRIPT_DIR/agents/tester/IDENTITY.md" "$TARGET_DIR/agents/tester/IDENTITY.md"
 
 echo "✓ SOUL.md e IDENTITY.md copiati."
+
+# ── Copia file rimanenti ──────────────────────
+echo ""
+echo "Copia file rimanenti..."
+
+# HEARTBEAT.md per ogni agente
+cp "$SCRIPT_DIR/agents/ceo/HEARTBEAT.md"       "$TARGET_DIR/agents/ceo/HEARTBEAT.md"
+cp "$SCRIPT_DIR/agents/engineer/HEARTBEAT.md"  "$TARGET_DIR/agents/engineer/HEARTBEAT.md"
+cp "$SCRIPT_DIR/agents/product/HEARTBEAT.md"   "$TARGET_DIR/agents/product/HEARTBEAT.md"
+cp "$SCRIPT_DIR/agents/marketing/HEARTBEAT.md" "$TARGET_DIR/agents/marketing/HEARTBEAT.md"
+cp "$SCRIPT_DIR/agents/uiux/HEARTBEAT.md"      "$TARGET_DIR/agents/uiux/HEARTBEAT.md"
+cp "$SCRIPT_DIR/agents/tester/HEARTBEAT.md"    "$TARGET_DIR/agents/tester/HEARTBEAT.md"
+
+# File di log specifici per ruolo
+cp "$SCRIPT_DIR/agents/engineer/BUILD-LOG.md"         "$TARGET_DIR/agents/engineer/BUILD-LOG.md"
+cp "$SCRIPT_DIR/agents/product/BACKLOG.md"            "$TARGET_DIR/agents/product/BACKLOG.md"
+cp "$SCRIPT_DIR/agents/marketing/CONTENT-CALENDAR.md" "$TARGET_DIR/agents/marketing/CONTENT-CALENDAR.md"
+cp "$SCRIPT_DIR/agents/uiux/UI-REVIEW-LOG.md"         "$TARGET_DIR/agents/uiux/UI-REVIEW-LOG.md"
+cp "$SCRIPT_DIR/agents/tester/BUG-LOG.md"             "$TARGET_DIR/agents/tester/BUG-LOG.md"
+cp "$SCRIPT_DIR/agents/tester/TEST-CHECKLIST.md"      "$TARGET_DIR/agents/tester/TEST-CHECKLIST.md"
+
+echo "✓ File di log e heartbeat copiati."
+
+# Cartella examples/
+cp -r "$SCRIPT_DIR/examples/." "$TARGET_DIR/examples/"
+echo "✓ Esempi copiati."
