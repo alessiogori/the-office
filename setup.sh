@@ -401,3 +401,52 @@ EOF
 
 chmod +x "$TARGET_DIR/agents/msg.sh"
 echo "✓ agents/msg.sh generato."
+
+# ── Copia e trasforma file agenti ─────────────
+echo ""
+echo "Copia file agenti..."
+
+substitute_names() {
+  local SRC="$1"
+  local DST="$2"
+  sed \
+    -e "s/Alessio/$CEO_NAME/g" \
+    -e "s/Stefano/$ENGINEER_NAME/g" \
+    -e "s/Walter/$PRODUCT_NAME/g" \
+    -e "s/Veronica/$MARKETING_NAME/g" \
+    -e "s/Alessandra/$UIUX_NAME/g" \
+    -e "s/Marwen/$TESTER_NAME/g" \
+    -e "s/alessio/$CEO_LOWER/g" \
+    -e "s/stefano/$ENGINEER_LOWER/g" \
+    -e "s/walter/$PRODUCT_LOWER/g" \
+    -e "s/veronica/$MARKETING_LOWER/g" \
+    -e "s/alessandra/$UIUX_LOWER/g" \
+    -e "s/marwen/$TESTER_LOWER/g" \
+    "$SRC" > "$DST"
+}
+
+# CEO
+substitute_names "$SCRIPT_DIR/agents/ceo/SOUL.md"      "$TARGET_DIR/agents/ceo/SOUL.md"
+substitute_names "$SCRIPT_DIR/agents/ceo/IDENTITY.md"  "$TARGET_DIR/agents/ceo/IDENTITY.md"
+
+# Engineer
+substitute_names "$SCRIPT_DIR/agents/engineer/SOUL.md"     "$TARGET_DIR/agents/engineer/SOUL.md"
+substitute_names "$SCRIPT_DIR/agents/engineer/IDENTITY.md" "$TARGET_DIR/agents/engineer/IDENTITY.md"
+
+# Product
+substitute_names "$SCRIPT_DIR/agents/product/SOUL.md"     "$TARGET_DIR/agents/product/SOUL.md"
+substitute_names "$SCRIPT_DIR/agents/product/IDENTITY.md" "$TARGET_DIR/agents/product/IDENTITY.md"
+
+# Marketing
+substitute_names "$SCRIPT_DIR/agents/marketing/SOUL.md"     "$TARGET_DIR/agents/marketing/SOUL.md"
+substitute_names "$SCRIPT_DIR/agents/marketing/IDENTITY.md" "$TARGET_DIR/agents/marketing/IDENTITY.md"
+
+# UI/UX
+substitute_names "$SCRIPT_DIR/agents/uiux/SOUL.md"     "$TARGET_DIR/agents/uiux/SOUL.md"
+substitute_names "$SCRIPT_DIR/agents/uiux/IDENTITY.md" "$TARGET_DIR/agents/uiux/IDENTITY.md"
+
+# Tester
+substitute_names "$SCRIPT_DIR/agents/tester/SOUL.md"     "$TARGET_DIR/agents/tester/SOUL.md"
+substitute_names "$SCRIPT_DIR/agents/tester/IDENTITY.md" "$TARGET_DIR/agents/tester/IDENTITY.md"
+
+echo "✓ SOUL.md e IDENTITY.md copiati."
