@@ -332,3 +332,72 @@ sed \
 cp "$SCRIPT_DIR/.gitignore" "$TARGET_DIR/.gitignore"
 
 echo "✓ CLAUDE.md, AGENTS.md, GEMINI.md, .gitignore generati."
+
+# ── Genera agents/msg.sh ──────────────────────
+echo ""
+echo "Generazione agents/msg.sh..."
+
+CEO_LOWER=$(echo "$CEO_NAME" | tr '[:upper:]' '[:lower:]')
+ENGINEER_LOWER=$(echo "$ENGINEER_NAME" | tr '[:upper:]' '[:lower:]')
+PRODUCT_LOWER=$(echo "$PRODUCT_NAME" | tr '[:upper:]' '[:lower:]')
+MARKETING_LOWER=$(echo "$MARKETING_NAME" | tr '[:upper:]' '[:lower:]')
+UIUX_LOWER=$(echo "$UIUX_NAME" | tr '[:upper:]' '[:lower:]')
+TESTER_LOWER=$(echo "$TESTER_NAME" | tr '[:upper:]' '[:lower:]')
+
+cat > "$TARGET_DIR/agents/msg.sh" << EOF
+#!/bin/bash
+# msg.sh — Invia un messaggio direttamente nel prompt Claude Code di un altro agente
+# Uso: ./agents/msg.sh <destinatario> "<messaggio>"
+
+RECIPIENT=\$(echo "\$1" | tr '[:upper:]' '[:lower:]')
+MESSAGE="\$2"
+
+if [[ -z "\$RECIPIENT" || -z "\$MESSAGE" ]]; then
+  echo "Uso: ./agents/msg.sh <destinatario> \"<messaggio>\""
+  echo "Destinatari: $CEO_LOWER, $ENGINEER_LOWER, $PRODUCT_LOWER, $MARKETING_LOWER, $UIUX_LOWER, $TESTER_LOWER"
+  exit 1
+fi
+
+case "\$RECIPIENT" in
+  $CEO_LOWER)       WINDOW_NAME="$CEO_NAME" ;;
+  $ENGINEER_LOWER)  WINDOW_NAME="$ENGINEER_NAME" ;;
+  $PRODUCT_LOWER)   WINDOW_NAME="$PRODUCT_NAME" ;;
+  $MARKETING_LOWER) WINDOW_NAME="$MARKETING_NAME" ;;
+  $UIUX_LOWER)      WINDOW_NAME="$UIUX_NAME" ;;
+  $TESTER_LOWER)    WINDOW_NAME="$TESTER_NAME" ;;
+  *)
+    echo "Destinatario '\$RECIPIENT' non riconosciuto."
+    echo "Destinatari validi: $CEO_LOWER, $ENGINEER_LOWER, $PRODUCT_LOWER, $MARKETING_LOWER, $UIUX_LOWER, $TESTER_LOWER"
+    exit 1
+    ;;
+esac
+
+osascript << APPLESCRIPT
+tell application "iTerm2"
+  set delivered to false
+  repeat with aWindow in windows
+    repeat with aTab in tabs of aWindow
+      repeat with aSession in sessions of aTab
+        if profile name of aSession contains "\$WINDOW_NAME" then
+          tell aSession
+            write text "MESSAGGIO IN ARRIVO - metti in coda: \$MESSAGE"
+          end tell
+          set delivered to true
+          exit repeat
+        end if
+      end repeat
+      if delivered then exit repeat
+    end repeat
+    if delivered then exit repeat
+  end repeat
+  if not delivered then
+    display notification "Finestra '\$WINDOW_NAME' non trovata in iTerm2." with title "msg.sh — errore"
+  end if
+end tell
+APPLESCRIPT
+
+echo "Messaggio inviato a \$WINDOW_NAME."
+EOF
+
+chmod +x "$TARGET_DIR/agents/msg.sh"
+echo "✓ agents/msg.sh generato."
