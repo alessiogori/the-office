@@ -62,3 +62,45 @@ UIUX_NAME="${UIUX_NAME:-Alessandra}"
 
 read -rp "Tester [Marwen]: " TESTER_NAME
 TESTER_NAME="${TESTER_NAME:-Marwen}"
+
+# ── Validazione directory target ──────────────
+echo ""
+if [[ -d "$TARGET_DIR" ]]; then
+  if [[ -n "$(ls -A "$TARGET_DIR" 2>/dev/null)" ]]; then
+    echo "⚠️  La directory '$TARGET_DIR' esiste ed è non vuota."
+    read -rp "   Continuare comunque? I file esistenti potrebbero essere sovrascritti [s/N]: " CONFIRM
+    CONFIRM="${CONFIRM:-N}"
+    if [[ "${CONFIRM,,}" != "s" ]]; then
+      echo "Setup annullato."
+      exit 0
+    fi
+  fi
+else
+  read -rp "La directory '$TARGET_DIR' non esiste. Crearla? [S/n]: " CREATE_DIR
+  CREATE_DIR="${CREATE_DIR:-S}"
+  if [[ "${CREATE_DIR,,}" == "s" ]]; then
+    mkdir -p "$TARGET_DIR"
+    echo "✓ Directory creata."
+  else
+    echo "Setup annullato."
+    exit 0
+  fi
+fi
+
+# ── Crea struttura directory ──────────────────
+echo ""
+echo "Creazione struttura directory..."
+
+mkdir -p "$TARGET_DIR/agents/ceo"
+mkdir -p "$TARGET_DIR/agents/engineer"
+mkdir -p "$TARGET_DIR/agents/product"
+mkdir -p "$TARGET_DIR/agents/marketing"
+mkdir -p "$TARGET_DIR/agents/uiux"
+mkdir -p "$TARGET_DIR/agents/tester"
+mkdir -p "$TARGET_DIR/shared-context"
+mkdir -p "$TARGET_DIR/examples/engineering"
+mkdir -p "$TARGET_DIR/examples/marketing"
+mkdir -p "$TARGET_DIR/examples/product"
+mkdir -p "$TARGET_DIR/docs/sessions"
+
+echo "✓ Struttura directory pronta."
