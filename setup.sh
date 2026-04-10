@@ -70,7 +70,7 @@ if [[ -d "$TARGET_DIR" ]]; then
     echo "⚠️  La directory '$TARGET_DIR' esiste ed è non vuota."
     read -rp "   Continuare comunque? I file esistenti potrebbero essere sovrascritti [s/N]: " CONFIRM
     CONFIRM="${CONFIRM:-N}"
-    if [[ "${CONFIRM,,}" != "s" ]]; then
+    if [[ "$(echo "$CONFIRM" | tr '[:upper:]' '[:lower:]')" != "s" ]]; then
       echo "Setup annullato."
       exit 0
     fi
@@ -78,7 +78,7 @@ if [[ -d "$TARGET_DIR" ]]; then
 else
   read -rp "La directory '$TARGET_DIR' non esiste. Crearla? [S/n]: " CREATE_DIR
   CREATE_DIR="${CREATE_DIR:-S}"
-  if [[ "${CREATE_DIR,,}" == "s" ]]; then
+  if [[ "$(echo "$CREATE_DIR" | tr '[:upper:]' '[:lower:]')" == "s" ]]; then
     mkdir -p "$TARGET_DIR"
     echo "✓ Directory creata."
   else
@@ -476,3 +476,23 @@ echo "✓ File di log e heartbeat copiati."
 # Cartella examples/
 cp -r "$SCRIPT_DIR/examples/." "$TARGET_DIR/examples/"
 echo "✓ Esempi copiati."
+
+# ── Fine ──────────────────────────────────────
+echo ""
+echo "╔══════════════════════════════════════════╗"
+echo "║   ✓ Setup completato!                    ║"
+echo "╚══════════════════════════════════════════╝"
+echo ""
+echo "Il sistema multi-agente è stato installato in:"
+echo "  $TARGET_DIR"
+echo ""
+echo "Prossimi passi:"
+echo "  1. cd $TARGET_DIR"
+echo "  2. Apri con Claude Code: claude ."
+echo "  3. Raffina shared-context/THESIS.md con la visione reale del progetto"
+echo "  4. Aggiorna shared-context/ROADMAP.md con le priorità attuali"
+echo "  5. Lancia i 6 agenti nelle finestre iTerm2"
+echo ""
+echo "Suggerimento: usa 'cat shared-context/THESIS.md' e chiedi a Claude"
+echo "di riscriverla sulla base di quello che sai del progetto."
+echo ""
