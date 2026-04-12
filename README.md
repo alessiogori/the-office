@@ -119,17 +119,66 @@ claude "Sei Marwen, il Tester. Leggi agents/tester/SOUL.md e agents/tester/IDENT
 
 Fatto. Ogni agente carica la sua anima e rimane nel suo dominio.
 
-### Opzione 2: Parti da zero con gli agenti già integrati
+### Opzione 2: Setup automatico con `setup.sh`
 
-Stai iniziando un nuovo progetto? Clona il repo e personalizza da lì:
+Clona il repo e lancia lo script interattivo. Ti chiede nomi progetto, tech stack, nomi agenti e installa tutto nella directory che scegli:
 
 ```bash
-git clone https://github.com/alessiogori/the-office.git mio-progetto
-cd mio-progetto
-
-# Modifica i file in shared-context/ per il tuo progetto
-# Poi apri 6 terminali e lancia gli agenti (vedi Step 4 sopra)
+git clone https://github.com/alessiogori/the-office.git
+cd the-office
+./setup.sh
 ```
+
+Lo script genera `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, tutti i file agente, `msg.sh`, `ack.sh` e `launch.sh` con i nomi che hai scelto.
+
+## Comunicazione tra agenti
+
+Gli agenti si mandano messaggi tramite due script in `agents/`:
+
+### Inviare un messaggio
+
+```bash
+./agents/msg.sh <mittente> <destinatario> "<testo>"
+# es: ./agents/msg.sh stefano walter "Modulo pagamenti pronto. Rivedi docs/payments.md."
+```
+
+Ogni agente deve identificarsi come mittente. Il messaggio che arriva in iTerm2:
+
+```
+--- MESSAGGIO IN ARRIVO ---
+Da:        Stefano
+A:         Walter
+Timestamp: 2026-04-12T15:30:42
+ID:        msg-20260412-153042-stewa
+
+Modulo pagamenti pronto. Rivedi docs/payments.md.
+
+Per rispondere:           ./agents/msg.sh stefano walter "<tua risposta>"
+Per confermare ricezione: ./agents/ack.sh msg-20260412-153042-stewa walter
+---------------------------
+```
+
+### Confermare la ricezione
+
+```bash
+./agents/ack.sh <msg-id> <agente-corrente>
+# es: ./agents/ack.sh msg-20260412-153042-stewa walter
+```
+
+Scrive un evento `ACK` nel log e notifica il mittente originale.
+
+### Log messaggi
+
+Tutti i messaggi vengono archiviati in `shared-context/MSG-LOG.jsonl`. Ogni riga è un evento JSON:
+
+```jsonl
+{"id":"msg-...","type":"SENT","ts":"...","from":"Stefano","to":"Walter","msg":"..."}
+{"id":"msg-...","type":"ACK","ts":"...","ack_by":"Walter","original_from":"Stefano","original_to":"Walter"}
+```
+
+Il log è append-only: nessuna riga viene mai riscritta. `SENT` e `ACK` sono eventi separati sulla stessa timeline. Puoi interrogarlo con `grep` o `jq`.
+
+---
 
 ## Struttura del progetto
 
@@ -137,6 +186,9 @@ cd mio-progetto
 tuo-progetto/
 ├── CLAUDE.md                    ← la tua config esistente + regole agenti
 ├── agents/
+│   ├── msg.sh                   ← invia messaggi strutturati tra agenti
+│   ├── ack.sh                   ← conferma ricezione di un messaggio
+│   ├── launch.sh                ← avvia tutti gli agenti in iTerm2
 │   ├── ceo/                     ← Alessio — supervisione strategica
 │   │   ├── SOUL.md
 │   │   ├── IDENTITY.md
@@ -170,13 +222,15 @@ tuo-progetto/
 └── shared-context/
     ├── THESIS.md                ← cosa crediamo
     ├── ROADMAP.md               ← dove stiamo andando
-    └── BRAND-GUIDE.md           ← come suoniamo
+    ├── BRAND-GUIDE.md           ← come suoniamo
+    └── MSG-LOG.jsonl            ← archivio completo messaggi inter-agente
 ```
 
 **Incluso in questo repo (non necessario nel tuo progetto):**
 
 ```
 the-office/
+├── setup.sh                     ← installa il sistema in un nuovo progetto
 ├── AGENTS.md                    ← config per Cursor, Copilot, Windsurf, ecc.
 ├── GEMINI.md                    ← config per Gemini CLI
 └── examples/
