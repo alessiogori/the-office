@@ -333,9 +333,9 @@ cp "$SCRIPT_DIR/.gitignore" "$TARGET_DIR/.gitignore"
 
 echo "✓ CLAUDE.md, AGENTS.md, GEMINI.md, .gitignore generati."
 
-# ── Genera agents/msg.sh ──────────────────────
+# ── Genera agents/msg.sh e agents/ack.sh ─────
 echo ""
-echo "Generazione agents/msg.sh..."
+echo "Generazione agents/msg.sh e agents/ack.sh..."
 
 CEO_LOWER=$(echo "$CEO_NAME" | tr '[:upper:]' '[:lower:]')
 ENGINEER_LOWER=$(echo "$ENGINEER_NAME" | tr '[:upper:]' '[:lower:]')
@@ -344,63 +344,51 @@ MARKETING_LOWER=$(echo "$MARKETING_NAME" | tr '[:upper:]' '[:lower:]')
 UIUX_LOWER=$(echo "$UIUX_NAME" | tr '[:upper:]' '[:lower:]')
 TESTER_LOWER=$(echo "$TESTER_NAME" | tr '[:upper:]' '[:lower:]')
 
-cat > "$TARGET_DIR/agents/msg.sh" << EOF
-#!/bin/bash
-# msg.sh — Invia un messaggio direttamente nel prompt Claude Code di un altro agente
-# Uso: ./agents/msg.sh <destinatario> "<messaggio>"
-
-RECIPIENT=\$(echo "\$1" | tr '[:upper:]' '[:lower:]')
-MESSAGE="\$2"
-
-if [[ -z "\$RECIPIENT" || -z "\$MESSAGE" ]]; then
-  echo "Uso: ./agents/msg.sh <destinatario> \"<messaggio>\""
-  echo "Destinatari: $CEO_LOWER, $ENGINEER_LOWER, $PRODUCT_LOWER, $MARKETING_LOWER, $UIUX_LOWER, $TESTER_LOWER"
-  exit 1
-fi
-
-case "\$RECIPIENT" in
-  $CEO_LOWER)       WINDOW_NAME="$CEO_NAME" ;;
-  $ENGINEER_LOWER)  WINDOW_NAME="$ENGINEER_NAME" ;;
-  $PRODUCT_LOWER)   WINDOW_NAME="$PRODUCT_NAME" ;;
-  $MARKETING_LOWER) WINDOW_NAME="$MARKETING_NAME" ;;
-  $UIUX_LOWER)      WINDOW_NAME="$UIUX_NAME" ;;
-  $TESTER_LOWER)    WINDOW_NAME="$TESTER_NAME" ;;
-  *)
-    echo "Destinatario '\$RECIPIENT' non riconosciuto."
-    echo "Destinatari validi: $CEO_LOWER, $ENGINEER_LOWER, $PRODUCT_LOWER, $MARKETING_LOWER, $UIUX_LOWER, $TESTER_LOWER"
-    exit 1
-    ;;
-esac
-
-osascript << APPLESCRIPT
-tell application "iTerm2"
-  set delivered to false
-  repeat with aWindow in windows
-    repeat with aTab in tabs of aWindow
-      repeat with aSession in sessions of aTab
-        if profile name of aSession contains "\$WINDOW_NAME" then
-          tell aSession
-            write text "MESSAGGIO IN ARRIVO - metti in coda: \$MESSAGE"
-          end tell
-          set delivered to true
-          exit repeat
-        end if
-      end repeat
-      if delivered then exit repeat
-    end repeat
-    if delivered then exit repeat
-  end repeat
-  if not delivered then
-    display notification "Finestra '\$WINDOW_NAME' non trovata in iTerm2." with title "msg.sh — errore"
-  end if
-end tell
-APPLESCRIPT
-
-echo "Messaggio inviato a \$WINDOW_NAME."
-EOF
+# msg.sh è già scritto con i nomi di default — sostituiamo i nomi agenti
+sed \
+  -e "s/alessio/$CEO_LOWER/g" \
+  -e "s/stefano/$ENGINEER_LOWER/g" \
+  -e "s/walter/$PRODUCT_LOWER/g" \
+  -e "s/veronica/$MARKETING_LOWER/g" \
+  -e "s/alessandra/$UIUX_LOWER/g" \
+  -e "s/marwen/$TESTER_LOWER/g" \
+  -e "s/Alessio/$CEO_NAME/g" \
+  -e "s/Stefano/$ENGINEER_NAME/g" \
+  -e "s/Walter/$PRODUCT_NAME/g" \
+  -e "s/Veronica/$MARKETING_NAME/g" \
+  -e "s/Alessandra/$UIUX_NAME/g" \
+  -e "s/Marwen/$TESTER_NAME/g" \
+  "$SCRIPT_DIR/agents/msg.sh" > "$TARGET_DIR/agents/msg.sh"
 
 chmod +x "$TARGET_DIR/agents/msg.sh"
-echo "✓ agents/msg.sh generato."
+
+# Copia ack.sh (è già parametrizzato — usa il log per ricavare mittente/destinatario)
+cp "$SCRIPT_DIR/agents/ack.sh" "$TARGET_DIR/agents/ack.sh"
+chmod +x "$TARGET_DIR/agents/ack.sh"
+
+echo "✓ agents/msg.sh e agents/ack.sh generati."
+
+# ── Copia launch.sh ───────────────────────────
+echo ""
+echo "Copia agents/launch.sh..."
+
+sed \
+  -e "s/alessio/$CEO_LOWER/g" \
+  -e "s/stefano/$ENGINEER_LOWER/g" \
+  -e "s/walter/$PRODUCT_LOWER/g" \
+  -e "s/veronica/$MARKETING_LOWER/g" \
+  -e "s/alessandra/$UIUX_LOWER/g" \
+  -e "s/marwen/$TESTER_LOWER/g" \
+  -e "s/Alessio/$CEO_NAME/g" \
+  -e "s/Stefano/$ENGINEER_NAME/g" \
+  -e "s/Walter/$PRODUCT_NAME/g" \
+  -e "s/Veronica/$MARKETING_NAME/g" \
+  -e "s/Alessandra/$UIUX_NAME/g" \
+  -e "s/Marwen/$TESTER_NAME/g" \
+  "$SCRIPT_DIR/agents/launch.sh" > "$TARGET_DIR/agents/launch.sh"
+
+chmod +x "$TARGET_DIR/agents/launch.sh"
+echo "✓ agents/launch.sh copiato."
 
 # ── Copia e trasforma file agenti ─────────────
 echo ""
