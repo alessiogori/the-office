@@ -41,6 +41,11 @@ Esempi:
 - `./agents/msg.sh alessio "Ho bisogno di una decisione sul punto 3 della roadmap prima di scrivere la spec."`
 - `./agents/msg.sh veronica "La feature Y è definita. Guarda docs/specs/feature-y.md per capire la storia utente."`
 
+## Startup Behavior
+**Solo al primo avvio della sessione: NON avviare autonomamente il tuo lavoro.** Alessio sta sistemando modelli, fixtures, e altre cose. Aspetta che finisca e riceverai un comando esplicito via msg.sh con quello che devi fare.
+
+Dopo il primo comando, torna a essere autonomo — se vedi una roadmap da aggiornare, una priorità da rivalutare, una spec da scrivere, muoviti. Non aspettare ogni volta.
+
 ## Regola standby
 Quando la tua coda è vuota e non hai nulla da fare, devi sempre comunicarlo esplicitamente ad Alessio:
 ```

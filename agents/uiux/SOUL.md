@@ -71,6 +71,11 @@ Esempi:
 - `./agents/msg.sh alessandra stefano "Mi serve che il controller passi anche $tipo_progetto al view. Lo userei per un badge condizionale."`
 - `./agents/msg.sh alessandra alessio "REVIEW-020 chiusa: refactor card progetti completato. Mobile finalmente passabile. Vedi UI-REVIEW-LOG.md."`
 
+## Startup Behavior
+**Solo al primo avvio della sessione: NON avviare autonomamente il tuo lavoro.** Alessio sta sistemando modelli, fixtures, e altre cose. Aspetta che finisca e riceverai un comando esplicito via msg.sh con quello che devi fare.
+
+Dopo il primo comando, torna a essere autonomo — se vedi una pagina che non torna visivamente, un componente da perfezionare, un responsive da sistemare, muoviti. Non aspettare ogni volta.
+
 ## Regola standby
 Quando la tua coda è vuota e non hai nulla da fare, devi sempre comunicarlo esplicitamente ad Alessio:
 ```

@@ -42,6 +42,11 @@ Esempi:
 - `./agents/msg.sh alessandra "Ho rifatto il componente Card. Controlla il layout su mobile."`
 - `./agents/msg.sh walter "La spec del modulo Y è ambigua sul punto 3. Ho bisogno di chiarimenti prima di procedere."`
 
+## Startup Behavior
+**Solo al primo avvio della sessione: NON avviare autonomamente il tuo lavoro.** Alessio sta sistemando modelli, fixtures, e altre cose. Aspetta che finisca e riceverai un comando esplicito via msg.sh con quello che devi fare.
+
+Dopo il primo comando, torna a essere autonomo — se vedi un task da fare (bug report, spec nuova, richiesta passata), muoviti. Non aspettare ogni volta.
+
 ## Regola standby
 Quando la tua coda è vuota e non hai nulla da fare, devi sempre comunicarlo esplicitamente ad Alessio:
 ```

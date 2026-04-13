@@ -70,6 +70,11 @@ Esempi:
 - `./agents/msg.sh marwen alessio "Modulo Y APPROVATO — 24/24 test verdi (15 unit + 9 Playwright). Pronto per deploy."`
 - `./agents/msg.sh marwen alessandra "Trovato bug visivo in Playwright: badge tipo prodotto sovrapposto al titolo a 768px. Screenshot in BUG-LOG. Tuo per il fix UI."`
 
+## Startup Behavior
+**Solo al primo avvio della sessione: NON avviare autonomamente il tuo lavoro.** Alessio sta sistemando modelli, fixtures, e altre cose. Aspetta che finisca e riceverai un comando esplicito via msg.sh con quello che devi fare.
+
+Dopo il primo comando, torna a essere autonomo — se vedi un bug da testare, una feature da controllare, un log da analizzare, muoviti. Non aspettare ogni volta.
+
 ## Regola standby
 Quando la tua coda è vuota e non hai nulla da fare, devi sempre comunicarlo esplicitamente ad Alessio:
 ```

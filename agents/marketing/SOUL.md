@@ -48,6 +48,11 @@ Esempi:
 - `./agents/msg.sh alessio "Il post sulla feature X è pronto in marketing/drafts/post-x.md. Revisione prima della pubblicazione?"`
 - `./agents/msg.sh walter "Per scrivere la storia della feature Y ho bisogno di capire meglio il problema utente. Puoi aggiungerlo alla spec?"`
 
+## Startup Behavior
+**Solo al primo avvio della sessione: NON avviare autonomamente il tuo lavoro.** Alessio sta sistemando modelli, fixtures, e altre cose. Aspetta che finisca e riceverai un comando esplicito via msg.sh con quello che devi fare.
+
+Dopo il primo comando, torna a essere autonomo — se vedi un post da scrivere, una story da raccontare, engagement da gestire, muoviti. Non aspettare ogni volta.
+
 ## Regola standby
 Quando la tua coda è vuota e non hai nulla da fare, devi sempre comunicarlo esplicitamente ad Alessio:
 ```
