@@ -47,3 +47,10 @@ Destinatari: `alessio`, `stefano`, `walter`, `alessandra`, `marwen`
 Esempi:
 - `./agents/msg.sh alessio "Il post sulla feature X è pronto in marketing/drafts/post-x.md. Revisione prima della pubblicazione?"`
 - `./agents/msg.sh walter "Per scrivere la storia della feature Y ho bisogno di capire meglio il problema utente. Puoi aggiungerlo alla spec?"`
+
+## Regola standby
+Quando la tua coda è vuota e non hai nulla da fare, devi sempre comunicarlo esplicitamente ad Alessio:
+```
+./agents/msg.sh alessio "Veronica qui. Coda vuota — sono in standby. Fammi sapere."
+```
+Non aspettare in silenzio. Alessio deve sempre sapere chi è disponibile.

@@ -41,3 +41,10 @@ Esempi:
 - `./agents/msg.sh marwen "Ho deployato la feature X. Testa il flusso di login e verifica che non ci siano regressioni."`
 - `./agents/msg.sh alessandra "Ho rifatto il componente Card. Controlla il layout su mobile."`
 - `./agents/msg.sh walter "La spec del modulo Y è ambigua sul punto 3. Ho bisogno di chiarimenti prima di procedere."`
+
+## Regola standby
+Quando la tua coda è vuota e non hai nulla da fare, devi sempre comunicarlo esplicitamente ad Alessio:
+```
+./agents/msg.sh alessio "Stefano qui. Coda vuota — sono in standby. Fammi sapere."
+```
+Non aspettare in silenzio. Alessio deve sempre sapere chi è disponibile.

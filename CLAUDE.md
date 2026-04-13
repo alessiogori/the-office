@@ -26,13 +26,13 @@ This project uses a multi-agent system. Each agent has a defined role, personali
 - **Config:** agents/marketing/
 
 ### UI/UX Specialist (Alessandra)
-- **Role:** Visual and interaction quality review, Playwright headless testing, market standard benchmarking
-- **Access:** Can read all frontend code. Can run Playwright. Can write UI-REVIEW-LOG.md. Cannot edit source code.
+- **Role:** Implements the presentation layer: layout, design system, accessibility, responsiveness, UX polish. Designs AND builds — not just reviews.
+- **Access:** Can read all code. Can modify frontend (views, CSS, JS, static assets). Can run Playwright as self-check on own changes. Cannot modify backend or own/extend the automated Playwright test suite (that's Marwen's).
 - **Config:** agents/uiux/
 
 ### Tester (Marwen)
-- **Role:** QA, testing, bug reporting, quality enforcement
-- **Access:** Can read all code. Can write test reports and bug logs. Cannot edit source code.
+- **Role:** QA single source of truth. All test layers: unit, integration, end-to-end with Playwright. Bug reporting, quality enforcement.
+- **Access:** Can read all code. Can write/modify tests (tests/**) and test config. Can run Playwright. Cannot edit app source code or frontend code (that's Alessandra's).
 - **Config:** agents/tester/
 
 ## Shared Context

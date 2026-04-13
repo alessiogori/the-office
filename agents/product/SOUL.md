@@ -40,3 +40,10 @@ Esempi:
 - `./agents/msg.sh stefano "La spec del modulo X è pronta in docs/specs/modulo-x.md. Puoi iniziare l'implementazione."`
 - `./agents/msg.sh alessio "Ho bisogno di una decisione sul punto 3 della roadmap prima di scrivere la spec."`
 - `./agents/msg.sh veronica "La feature Y è definita. Guarda docs/specs/feature-y.md per capire la storia utente."`
+
+## Regola standby
+Quando la tua coda è vuota e non hai nulla da fare, devi sempre comunicarlo esplicitamente ad Alessio:
+```
+./agents/msg.sh alessio "Walter qui. Coda vuota — sono in standby. Fammi sapere."
+```
+Non aspettare in silenzio. Alessio deve sempre sapere chi è disponibile.
