@@ -5,6 +5,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="$SCRIPT_DIR/../shared-context/MSG-LOG.jsonl"
+INBOX_DIR="$SCRIPT_DIR/../shared-context/inbox"
 
 FROM=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 RECIPIENT=$(echo "$2" | tr '[:upper:]' '[:lower:]')
@@ -55,8 +56,11 @@ MSG_ESCAPED=$(printf '%s' "$MESSAGE" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/g' |
 printf '{"id":"%s","type":"SENT","ts":"%s","from":"%s","to":"%s","msg":"%s"}\n' \
   "$MSG_ID" "$TIMESTAMP" "$FROM_NAME" "$WINDOW_NAME" "$MSG_ESCAPED" >> "$LOG_FILE"
 
-# ── Componi il messaggio strutturato per iTerm2 ───────────────────────────────
-read -r -d '' FORMATTED_MSG << MSG || true
+# ── Scrivi messaggio completo su file inbox ────────────────────────────────────
+mkdir -p "$INBOX_DIR/$RECIPIENT"
+MSG_FILE="$INBOX_DIR/$RECIPIENT/$MSG_ID.md"
+
+cat > "$MSG_FILE" << MSGFILE
 --- MESSAGGIO IN ARRIVO ---
 Da:        $FROM_NAME
 A:         $WINDOW_NAME
@@ -65,21 +69,26 @@ ID:        $MSG_ID
 
 $MESSAGE
 
-Per rispondere:          ./agents/msg.sh $FROM $RECIPIENT "<tua risposta>"
+Per rispondere:           ./agents/msg.sh $RECIPIENT $FROM "<tua risposta>"
 Per confermare ricezione: ./agents/ack.sh $MSG_ID $RECIPIENT
 ---------------------------
-MSG
+MSGFILE
+
+# ── Componi notifica singola riga per iTerm2 ──────────────────────────────────
+NOTIFY_TEXT="Nuovo messaggio da $FROM_NAME (ID: $MSG_ID) — leggi shared-context/inbox/$RECIPIENT/$MSG_ID.md"
 
 # ── Invia via iTerm2 AppleScript ──────────────────────────────────────────────
+# Usa return (CR, 0x0D) invece di newline (LF, 0x0A) per triggerare il submit in Claude Code
 RESULT=$(osascript << EOF
 tell application "iTerm2"
   set delivered to false
+  set theNotify to "$NOTIFY_TEXT"
   repeat with aWindow in windows
     repeat with aTab in tabs of aWindow
       repeat with aSession in sessions of aTab
         if profile name of aSession contains "$WINDOW_NAME" then
           tell aSession
-            write text "$FORMATTED_MSG"
+            write text theNotify & return newline NO
           end tell
           set delivered to true
           exit repeat
@@ -100,11 +109,12 @@ EOF
 
 if [[ "$RESULT" == "NOT_FOUND" ]]; then
   echo "Errore: finestra '$WINDOW_NAME' non trovata in iTerm2."
-  echo "Il messaggio è stato loggato in MSG-LOG.jsonl con stato SENT."
+  echo "Il messaggio è stato salvato in $MSG_FILE"
   echo "ID messaggio: $MSG_ID"
   exit 1
 fi
 
 echo "Messaggio inviato a $WINDOW_NAME."
 echo "ID:  $MSG_ID"
+echo "File: shared-context/inbox/$RECIPIENT/$MSG_ID.md"
 echo "Log: shared-context/MSG-LOG.jsonl"
