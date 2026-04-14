@@ -73,12 +73,24 @@ if [[ -n "$FROM_NAME" ]]; then
   osascript << EOF
 tell application "iTerm2"
   set notified to false
+  set ackText to "--- ACK RICEVUTO --- ID: $MSG_ID | Confermato da: $ACK_BY_NAME | $ACK_TIMESTAMP ---"
   repeat with aWindow in windows
     repeat with aTab in tabs of aWindow
       repeat with aSession in sessions of aTab
-        if profile name of aSession contains "$FROM_NAME" then
+        set sessionMatched to false
+        try
+          if name of aSession contains "$FROM_NAME" then set sessionMatched to true
+        end try
+        if not sessionMatched then
+          try
+            if profile name of aSession contains "$FROM_NAME" then set sessionMatched to true
+          end try
+        end if
+        if sessionMatched then
           tell aSession
-            write text "--- ACK RICEVUTO --- ID: $MSG_ID | Confermato da: $ACK_BY_NAME | $ACK_TIMESTAMP ---"
+            write text ackText newline NO
+            delay 0.15
+            write text "" & return newline NO
           end tell
           set notified to true
           exit repeat

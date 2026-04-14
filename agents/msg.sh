@@ -86,9 +86,20 @@ tell application "iTerm2"
   repeat with aWindow in windows
     repeat with aTab in tabs of aWindow
       repeat with aSession in sessions of aTab
-        if profile name of aSession contains "$WINDOW_NAME" then
+        set sessionMatched to false
+        try
+          if name of aSession contains "$WINDOW_NAME" then set sessionMatched to true
+        end try
+        if not sessionMatched then
+          try
+            if profile name of aSession contains "$WINDOW_NAME" then set sessionMatched to true
+          end try
+        end if
+        if sessionMatched then
           tell aSession
-            write text theNotify & return newline NO
+            write text theNotify newline NO
+            delay 0.15
+            write text "" & return newline NO
           end tell
           set delivered to true
           exit repeat

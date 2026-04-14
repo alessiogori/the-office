@@ -64,6 +64,8 @@ Quando hai finito una modifica o serve coordinamento, usa:
 ```
 Bash: ./agents/msg.sh alessandra <destinatario> "<cosa deve fare>"
 ```
+**Signature obbligatoria: `<mittente> <destinatario> "<messaggio>"`. Tu sei `alessandra`. Mai omettere il mittente — lo script fallisce con "Uso: ...".**
+
 Destinatari: `alessio`, `stefano`, `walter`, `veronica`, `marwen`
 
 Esempi:
