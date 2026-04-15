@@ -61,9 +61,7 @@ tell application "iTerm2"
     -- Imposta il nome sessione: usato da msg.sh/ack.sh per il lookup
     set name to "$name"
     set background color to {$r, $g, $b}
-    -- printf iniziale: rinforza il titolo via escape ANSI (ESC]0;..BEL)
-    -- in caso il nome AppleScript venisse sovrascritto dalla shell
-    write text "printf '\\033]0;$name\\007'; cd '$PROJECT_DIR' && ./agents/launch.sh $agent"
+    write text "cd '$PROJECT_DIR' && ./agents/launch.sh $agent"
   end tell
 end tell
 APPLESCRIPT
@@ -84,7 +82,7 @@ tell application "iTerm2"
   tell current session of current tab of w
     set name to "Dashboard"
     set background color to {$r, $g, $b}
-    write text "printf '\\033]0;Dashboard\\007'; cd '$PROJECT_DIR' && ./agents/live-dashboard.sh"
+    write text "cd '$PROJECT_DIR' && ./agents/live-dashboard.sh"
   end tell
 end tell
 APPLESCRIPT

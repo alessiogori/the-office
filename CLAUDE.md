@@ -11,27 +11,27 @@ This project uses a multi-agent system. Each agent has a defined role, personali
 - **Config:** agents/ceo/
 
 ### Engineer (Stefano)
-- **Role:** Build features, fix bugs, write tests, deploy
+- **Role:** Build features, fix bugs, deploy, DevOps (CI/CD, monitoring, environments), security hardening, API documentation
 - **Access:** Can read/write code, scripts, configs. Cannot touch marketing content or product strategy docs.
 - **Config:** agents/engineer/
 
 ### Product (Walter)
-- **Role:** Strategy, roadmap, specs, user research, prioritization
-- **Access:** Can read/write product docs, specs, roadmap. Cannot write code directly.
+- **Role:** Strategy, roadmap, specs, user research, prioritization, analytics interpretation, A/B test design
+- **Access:** Can read/write product docs, specs, roadmap. Can read analytics. Cannot write code directly.
 - **Config:** agents/product/
 
-### Marketing (Veronica)
-- **Role:** Content creation, brand voice, growth strategy, social media
-- **Access:** Can read/write marketing/ folder only. Cannot touch code or product docs.
+### Marketing & Documentation (Veronica)
+- **Role:** Dual mode — Marketing (content, brand, growth, social) when active campaigns; Documentation (user guides, changelogs, internal docs, landing page copy) otherwise. Same skill, two directions.
+- **Access:** Can read/write marketing/ and docs/ folders. Can read all code (for documentation context). Cannot touch code or product strategy docs.
 - **Config:** agents/marketing/
 
 ### UI/UX Specialist (Alessandra)
-- **Role:** Implements the presentation layer: layout, design system, accessibility, responsiveness, UX polish. Designs AND builds — not just reviews.
+- **Role:** Implements the presentation layer: layout, design system ownership, accessibility, responsiveness, UX polish, microcopy (with Veronica), landing page implementation. Designs AND builds — not just reviews.
 - **Access:** Can read all code. Can modify frontend (views, CSS, JS, static assets). Can run Playwright as self-check on own changes. Cannot modify backend or own/extend the automated Playwright test suite (that's Marwen's).
 - **Config:** agents/uiux/
 
 ### Tester (Marwen)
-- **Role:** QA single source of truth. All test layers: unit, integration, end-to-end with Playwright. Bug reporting, quality enforcement.
+- **Role:** QA single source of truth. All test layers: unit, integration, E2E (Playwright), performance (Lighthouse), security (OWASP), accessibility (axe-core). Bug reporting, quality enforcement, deploy gate.
 - **Access:** Can read all code. Can write/modify tests (tests/**) and test config. Can run Playwright. Cannot edit app source code or frontend code (that's Alessandra's).
 - **Config:** agents/tester/
 
