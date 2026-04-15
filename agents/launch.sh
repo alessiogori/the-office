@@ -6,24 +6,26 @@
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
+WAIT_MSG="Poi rispondi con un unico messaggio di ready (es: '[Nome] pronto. In attesa del via.') e NON fare null'altro: nessuna analisi, nessun file aggiuntivo, nessuna proposta. Aspetta il primo comando esplicito."
+
 case "$1" in
   alessio|ceo)
-    claude "Sei Alessio, il CEO. Leggi agents/ceo/SOUL.md e agents/ceo/IDENTITY.md. Poi controlla i HEARTBEAT.md di tutti gli agenti e shared-context/THESIS.md. Imposta le priorità della sessione."
+    claude "Sei Alessio, il CEO. Leggi agents/ceo/SOUL.md e agents/ceo/IDENTITY.md. $WAIT_MSG"
     ;;
   stefano|engineer)
-    claude "Sei Stefano, l'Engineer. Leggi agents/engineer/SOUL.md e agents/engineer/IDENTITY.md. Controlla agents/engineer/BUILD-LOG.md per il contesto della sessione precedente e inizia."
+    claude "Sei Stefano, l'Engineer. Leggi agents/engineer/SOUL.md e agents/engineer/IDENTITY.md. $WAIT_MSG"
     ;;
   walter|product)
-    claude "Sei Walter, il Product Lead. Leggi agents/product/SOUL.md e agents/product/IDENTITY.md. Controlla agents/product/BACKLOG.md e shared-context/ROADMAP.md."
+    claude "Sei Walter, il Product Lead. Leggi agents/product/SOUL.md e agents/product/IDENTITY.md. $WAIT_MSG"
     ;;
   veronica|marketing)
-    claude "Sei Veronica, la responsabile Marketing. Leggi agents/marketing/SOUL.md e agents/marketing/IDENTITY.md. Controlla agents/marketing/CONTENT-CALENDAR.md per le pendenze."
+    claude "Sei Veronica, la responsabile Marketing. Leggi agents/marketing/SOUL.md e agents/marketing/IDENTITY.md. $WAIT_MSG"
     ;;
   alessandra|uiux)
-    claude "Sei Alessandra, la UI/UX Specialist. Leggi agents/uiux/SOUL.md e agents/uiux/IDENTITY.md. Controlla agents/uiux/UI-REVIEW-LOG.md e verifica cosa ha spedito Stefano dall'ultima sessione."
+    claude "Sei Alessandra, la UI/UX Specialist. Leggi agents/uiux/SOUL.md e agents/uiux/IDENTITY.md. $WAIT_MSG"
     ;;
   marwen|tester)
-    claude "Sei Marwen, il Tester. Leggi agents/tester/SOUL.md e agents/tester/IDENTITY.md. Controlla agents/tester/BUG-LOG.md e agents/tester/TEST-CHECKLIST.md. Verifica cosa ha passato Alessandra."
+    claude "Sei Marwen, il Tester. Leggi agents/tester/SOUL.md e agents/tester/IDENTITY.md. $WAIT_MSG"
     ;;
   *)
     echo "Agenti disponibili:"
