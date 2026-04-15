@@ -5,6 +5,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="$SCRIPT_DIR/../shared-context/MSG-LOG.jsonl"
+INBOX_DIR="$SCRIPT_DIR/../shared-context/inbox"
 
 MSG_ID="$1"
 ACK_BY_RAW=$(echo "${2:-}" | tr '[:upper:]' '[:lower:]')
@@ -68,9 +69,16 @@ echo "  Inviato da: $FROM_NAME  →  a: $TO_NAME"
 echo "  Confermato da: $ACK_BY_NAME  alle $ACK_TIMESTAMP"
 echo "  Log: shared-context/MSG-LOG.jsonl"
 
+# ── Elimina il file inbox (messaggio processato) ──────────────────────────────
+INBOX_FILE="$INBOX_DIR/$ACK_BY_RAW/$MSG_ID.md"
+if [[ -f "$INBOX_FILE" ]]; then
+  rm "$INBOX_FILE"
+  echo "  Inbox: shared-context/inbox/$ACK_BY_RAW/$MSG_ID.md rimosso."
+fi
+
 # ── Notifica il mittente originale in iTerm2 ─────────────────────────────────
 if [[ -n "$FROM_NAME" ]]; then
-  osascript << EOF
+  NOTIFY_RESULT=$(osascript << EOF
 tell application "iTerm2"
   set notified to false
   set ackText to "--- ACK RICEVUTO --- ID: $MSG_ID | Confermato da: $ACK_BY_NAME | $ACK_TIMESTAMP ---"
@@ -84,6 +92,11 @@ tell application "iTerm2"
         if not sessionMatched then
           try
             if profile name of aSession contains "$FROM_NAME" then set sessionMatched to true
+          end try
+        end if
+        if not sessionMatched then
+          try
+            if name of aWindow contains "$FROM_NAME" then set sessionMatched to true
           end try
         end if
         if sessionMatched then
@@ -101,8 +114,15 @@ tell application "iTerm2"
     if notified then exit repeat
   end repeat
   if not notified then
-    display notification "ACK per $MSG_ID da $ACK_BY_NAME (finestra $FROM_NAME non attiva)." with title "ack.sh"
+    return "NOT_FOUND"
   end if
+  return "OK"
 end tell
 EOF
+)
+
+  if [[ "$NOTIFY_RESULT" == "NOT_FOUND" ]]; then
+    echo "Avviso: finestra '$FROM_NAME' non trovata in iTerm2 — ACK non consegnato in real-time."
+    echo "Suggerimento: apri la finestra con  ./agents/iterm.sh ${FROM_NAME,,}"
+  fi
 fi

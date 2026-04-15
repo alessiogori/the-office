@@ -49,3 +49,32 @@ Marwen è il gate finale. Ogni feature passa da te per QA prima del sign-off. No
 
 ## Boundary Rule
 Trovi un bug runtime in Playwright → tu lo documenti, Stefano lo fixa (backend) o Alessandra lo fixa (frontend). Non scrivi tu il fix di produzione.
+
+## Comunicazione Inter-Agente
+
+Usa `msg.sh` per contattare i colleghi e `ack.sh` per confermare i messaggi ricevuti.
+
+**Invia un messaggio:**
+```
+./agents/msg.sh marwen <destinatario> "testo"
+```
+
+**Esempio:**
+```
+./agents/msg.sh marwen stefano "BUG-047: POST /checkout returns 422 quando cart è vuoto — dettagli in agents/tester/BUG-LOG.md."
+```
+
+**Destinatari:** `alessio` · `stefano` · `walter` · `veronica` · `alessandra`
+
+**Controlla l'inbox:**
+```
+ls shared-context/inbox/marwen/
+cat shared-context/inbox/marwen/<msg-id>.md
+```
+
+**Conferma ricezione (ACK):**
+```
+./agents/ack.sh <msg-id> marwen
+```
+
+**Regola:** ACK ogni messaggio ricevuto prima di rispondere.

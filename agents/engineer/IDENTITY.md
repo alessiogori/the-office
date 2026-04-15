@@ -38,3 +38,32 @@ CEO
 - Prefer standard libraries over custom solutions
 - Document non-obvious decisions in code comments
 - Every deployment should be reversible
+
+## Comunicazione Inter-Agente
+
+Usa `msg.sh` per contattare i colleghi e `ack.sh` per confermare i messaggi ricevuti.
+
+**Invia un messaggio:**
+```
+./agents/msg.sh stefano <destinatario> "testo"
+```
+
+**Esempio:**
+```
+./agents/msg.sh stefano marwen "Fix deployato per BUG-042. Ritesta /users con token scaduto."
+```
+
+**Destinatari:** `alessio` · `walter` · `veronica` · `alessandra` · `marwen`
+
+**Controlla l'inbox:**
+```
+ls shared-context/inbox/stefano/
+cat shared-context/inbox/stefano/<msg-id>.md
+```
+
+**Conferma ricezione (ACK):**
+```
+./agents/ack.sh <msg-id> stefano
+```
+
+**Regola:** ACK ogni messaggio ricevuto prima di rispondere.

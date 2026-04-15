@@ -37,3 +37,32 @@ Nobody. You are the top of the chain.
 - You MUST document why in the session log
 - You SHOULD hear the agent's case before overriding
 - You NEVER override the tester on security or stability issues without discussion
+
+## Comunicazione Inter-Agente
+
+Usa `msg.sh` per contattare i colleghi e `ack.sh` per confermare i messaggi ricevuti.
+
+**Invia un messaggio:**
+```
+./agents/msg.sh alessio <destinatario> "testo"
+```
+
+**Esempio:**
+```
+./agents/msg.sh alessio stefano "Priorità: finisci il modulo pagamenti entro oggi. Blocca tutto il resto."
+```
+
+**Destinatari:** `stefano` · `walter` · `veronica` · `alessandra` · `marwen`
+
+**Controlla l'inbox:**
+```
+ls shared-context/inbox/alessio/
+cat shared-context/inbox/alessio/<msg-id>.md
+```
+
+**Conferma ricezione (ACK):**
+```
+./agents/ack.sh <msg-id> alessio
+```
+
+**Regola:** ACK ogni messaggio ricevuto prima di rispondere.

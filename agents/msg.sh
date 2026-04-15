@@ -17,6 +17,11 @@ if [[ -z "$FROM" || -z "$RECIPIENT" || -z "$MESSAGE" ]]; then
   exit 1
 fi
 
+if [[ "$FROM" == "$RECIPIENT" ]]; then
+  echo "Errore: mittente e destinatario sono la stessa persona ('$FROM')."
+  exit 1
+fi
+
 # ── Risolvi nomi visualizzati ─────────────────────────────────────────────────
 resolve_name() {
   case "$1" in
@@ -45,19 +50,22 @@ if [[ -z "$WINDOW_NAME" ]]; then
   exit 1
 fi
 
+# ── Assicura che shared-context/ e inbox/ esistano ───────────────────────────
+mkdir -p "$(dirname "$LOG_FILE")"
+mkdir -p "$INBOX_DIR/$RECIPIENT"
+
 # ── Genera timestamp e ID univoco ─────────────────────────────────────────────
 TIMESTAMP=$(date "+%Y-%m-%dT%H:%M:%S")
 MSG_ID="msg-$(date +%Y%m%d-%H%M%S)-${FROM:0:3}${RECIPIENT:0:3}"
 
 # ── Scrivi evento SENT nel log JSONL ──────────────────────────────────────────
-# Escape del messaggio per JSON (backslash, doppi apici, newline)
-MSG_ESCAPED=$(printf '%s' "$MESSAGE" | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/g' | tr -d '\n' | sed 's/\\n$//')
+# Usa Python3 per escaping JSON sicuro: gestisce \, ", \n, \t, Unicode, ecc.
+MSG_ESCAPED=$(python3 -c "import json,sys; print(json.dumps(sys.stdin.read())[1:-1])" <<< "$MESSAGE")
 
 printf '{"id":"%s","type":"SENT","ts":"%s","from":"%s","to":"%s","msg":"%s"}\n' \
   "$MSG_ID" "$TIMESTAMP" "$FROM_NAME" "$WINDOW_NAME" "$MSG_ESCAPED" >> "$LOG_FILE"
 
 # ── Scrivi messaggio completo su file inbox ────────────────────────────────────
-mkdir -p "$INBOX_DIR/$RECIPIENT"
 MSG_FILE="$INBOX_DIR/$RECIPIENT/$MSG_ID.md"
 
 cat > "$MSG_FILE" << MSGFILE
@@ -90,9 +98,15 @@ tell application "iTerm2"
         try
           if name of aSession contains "$WINDOW_NAME" then set sessionMatched to true
         end try
+        -- fallback: nome della finestra (es. settato da iterm.sh via AppleScript)
         if not sessionMatched then
           try
             if profile name of aSession contains "$WINDOW_NAME" then set sessionMatched to true
+          end try
+        end if
+        if not sessionMatched then
+          try
+            if name of aWindow contains "$WINDOW_NAME" then set sessionMatched to true
           end try
         end if
         if sessionMatched then
@@ -110,7 +124,6 @@ tell application "iTerm2"
     if delivered then exit repeat
   end repeat
   if not delivered then
-    display notification "Finestra '$WINDOW_NAME' non trovata in iTerm2." with title "msg.sh — errore"
     return "NOT_FOUND"
   end if
   return "OK"
@@ -120,8 +133,11 @@ EOF
 
 if [[ "$RESULT" == "NOT_FOUND" ]]; then
   echo "Errore: finestra '$WINDOW_NAME' non trovata in iTerm2."
-  echo "Il messaggio è stato salvato in $MSG_FILE"
-  echo "ID messaggio: $MSG_ID"
+  echo "Suggerimento: apri prima la finestra con  ./agents/iterm.sh $RECIPIENT"
+  echo ""
+  echo "Il messaggio è stato salvato comunque:"
+  echo "  File: $MSG_FILE"
+  echo "  ID:   $MSG_ID"
   exit 1
 fi
 

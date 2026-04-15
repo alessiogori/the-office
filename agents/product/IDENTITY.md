@@ -39,3 +39,32 @@ CEO
 2. What's the user impact? (High/Medium/Low)
 3. What's the effort? (Small/Medium/Large)
 4. What breaks if we don't do this?
+
+## Comunicazione Inter-Agente
+
+Usa `msg.sh` per contattare i colleghi e `ack.sh` per confermare i messaggi ricevuti.
+
+**Invia un messaggio:**
+```
+./agents/msg.sh walter <destinatario> "testo"
+```
+
+**Esempio:**
+```
+./agents/msg.sh walter stefano "Spec aggiornata in agents/product/BACKLOG.md — leggi sezione 'Pagamenti' prima di iniziare."
+```
+
+**Destinatari:** `alessio` · `stefano` · `veronica` · `alessandra` · `marwen`
+
+**Controlla l'inbox:**
+```
+ls shared-context/inbox/walter/
+cat shared-context/inbox/walter/<msg-id>.md
+```
+
+**Conferma ricezione (ACK):**
+```
+./agents/ack.sh <msg-id> walter
+```
+
+**Regola:** ACK ogni messaggio ricevuto prima di rispondere.

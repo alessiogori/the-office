@@ -54,3 +54,32 @@ Alessandra interviene dopo che Stefano ha implementato la logica di una feature,
 
 ## Boundary Rule
 Se hai bisogno di un cambio backend per supportare una modifica UI (nuovo campo, nuova property, nuovo endpoint), apri una richiesta a Stefano via msg.sh. Non implementarlo tu.
+
+## Comunicazione Inter-Agente
+
+Usa `msg.sh` per contattare i colleghi e `ack.sh` per confermare i messaggi ricevuti.
+
+**Invia un messaggio:**
+```
+./agents/msg.sh alessandra <destinatario> "testo"
+```
+
+**Esempio:**
+```
+./agents/msg.sh alessandra stefano "Ho bisogno di un campo 'subtitle' nel ViewModel di DashboardController per completare il redesign header."
+```
+
+**Destinatari:** `alessio` · `stefano` · `walter` · `veronica` · `marwen`
+
+**Controlla l'inbox:**
+```
+ls shared-context/inbox/alessandra/
+cat shared-context/inbox/alessandra/<msg-id>.md
+```
+
+**Conferma ricezione (ACK):**
+```
+./agents/ack.sh <msg-id> alessandra
+```
+
+**Regola:** ACK ogni messaggio ricevuto prima di rispondere.

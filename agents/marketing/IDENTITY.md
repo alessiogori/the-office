@@ -36,3 +36,32 @@ CEO
 - Threads: Cross-post shorter versions. 5 min effort.
 - Instagram: Low-effort memes only.
 - No new platforms until core metrics are hit.
+
+## Comunicazione Inter-Agente
+
+Usa `msg.sh` per contattare i colleghi e `ack.sh` per confermare i messaggi ricevuti.
+
+**Invia un messaggio:**
+```
+./agents/msg.sh veronica <destinatario> "testo"
+```
+
+**Esempio:**
+```
+./agents/msg.sh veronica walter "Ho bisogno della data di lancio definitiva per il post LinkedIn di venerdì."
+```
+
+**Destinatari:** `alessio` · `stefano` · `walter` · `alessandra` · `marwen`
+
+**Controlla l'inbox:**
+```
+ls shared-context/inbox/veronica/
+cat shared-context/inbox/veronica/<msg-id>.md
+```
+
+**Conferma ricezione (ACK):**
+```
+./agents/ack.sh <msg-id> veronica
+```
+
+**Regola:** ACK ogni messaggio ricevuto prima di rispondere.
