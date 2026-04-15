@@ -71,9 +71,32 @@ APPLESCRIPT
   echo "  ✓ $role — $name"
 }
 
+open_dashboard_window() {
+  # Sfondo quasi nero (stile monitor di controllo), nessun ruolo agente
+  local r=$(( 16#05 * 257 ))
+  local g=$(( 16#08 * 257 ))
+  local b=$(( 16#10 * 257 ))   # #050810 — blu-nero profondo
+
+  osascript <<APPLESCRIPT
+tell application "iTerm2"
+  activate
+  set w to (create window with default profile)
+  tell current session of current tab of w
+    set name to "Dashboard"
+    set background color to {$r, $g, $b}
+    write text "printf '\\033]0;Dashboard\\007'; cd '$PROJECT_DIR' && ./agents/live-dashboard.sh"
+  end tell
+end tell
+APPLESCRIPT
+
+  echo "  ✓ Dashboard (live)"
+}
+
 case "$1" in
   all)
-    echo "Avvio tutti gli agenti..."
+    echo "Avvio tutti gli agenti + dashboard..."
+    open_dashboard_window
+    sleep 0.4
     for agent in alessio stefano walter veronica alessandra marwen; do
       open_window "$agent"
       sleep 0.4
@@ -86,8 +109,9 @@ case "$1" in
   veronica|marketing) open_window "veronica" ;;
   alessandra|uiux)    open_window "alessandra" ;;
   marwen|tester)      open_window "marwen" ;;
+  dashboard)          open_dashboard_window ;;
   *)
-    echo "Uso: ./agents/iterm.sh <agente|all>"
+    echo "Uso: ./agents/iterm.sh <agente|all|dashboard>"
     echo ""
     echo "  alessio    — finestra rosso scuro    (CEO)"
     echo "  stefano    — finestra blu scuro      (Engineer)"
@@ -95,6 +119,7 @@ case "$1" in
     echo "  veronica   — finestra viola scuro    (Marketing)"
     echo "  alessandra — finestra teal scuro     (UI/UX)"
     echo "  marwen     — finestra arancione sc.  (Tester)"
-    echo "  all        — lancia tutti"
+    echo "  dashboard  — finestra blu-nero       (Live Dashboard)"
+    echo "  all        — lancia tutti + dashboard"
     ;;
 esac
