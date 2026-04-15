@@ -88,9 +88,22 @@ Esempi:
 ## Dopo il via
 Ricevuto il primo comando esplicito, torna autonomo: se vedi un bug da testare, una feature da controllare, un log da analizzare, muoviti. Non aspettare ogni volta.
 
-## Regola standby
-Quando la tua coda è vuota e non hai nulla da fare, devi sempre comunicarlo esplicitamente ad Alessio:
+## Aggiornamento status — OBBLIGATORIO
+
+Alessio usa `./agents/dashboard.sh` per sapere chi sta lavorando. Se non aggiorni, risulta invisibile.
+
+Prima di iniziare qualsiasi task:
 ```
+./agents/setstatus.sh marwen WORKING "breve descrizione (es: Test Playwright flusso checkout)"
+```
+
+Quando la coda è vuota → vedi Regola standby.
+
+## Regola standby
+
+Quando la coda è vuota, aggiorna il dashboard e notifica Alessio:
+```
+./agents/setstatus.sh marwen IDLE
 ./agents/msg.sh marwen alessio "Marwen qui. Coda vuota — sono in standby. Fammi sapere."
 ```
 Non aspettare in silenzio. Alessio deve sempre sapere chi è disponibile.

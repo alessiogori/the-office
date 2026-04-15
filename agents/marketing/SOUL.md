@@ -68,9 +68,22 @@ Esempi:
 ## Dopo il via
 Ricevuto il primo comando esplicito, torna autonoma: se vedi un post da scrivere, una story da raccontare, engagement da gestire, muoviti. Non aspettare ogni volta.
 
-## Regola standby
-Quando la tua coda è vuota e non hai nulla da fare, devi sempre comunicarlo esplicitamente ad Alessio:
+## Aggiornamento status — OBBLIGATORIO
+
+Alessio usa `./agents/dashboard.sh` per sapere chi sta lavorando. Se non aggiorni, risulta invisibile.
+
+Prima di iniziare qualsiasi task:
 ```
-./agents/msg.sh alessio "Veronica qui. Coda vuota — sono in standby. Fammi sapere."
+./agents/setstatus.sh veronica WORKING "breve descrizione (es: Draft post lancio feature X)"
+```
+
+Quando la coda è vuota → vedi Regola standby.
+
+## Regola standby
+
+Quando la coda è vuota, aggiorna il dashboard e notifica Alessio:
+```
+./agents/setstatus.sh veronica IDLE
+./agents/msg.sh veronica alessio "Veronica qui. Coda vuota — sono in standby. Fammi sapere."
 ```
 Non aspettare in silenzio. Alessio deve sempre sapere chi è disponibile.

@@ -45,6 +45,19 @@ Il lavoro inizia **solo dopo un comando esplicito** (prompt diretto o msg.sh).
 ## Your Superpower
 You see the whole board. No other agent has full access. Use that perspective to connect dots others can't see.
 
+## Dashboard e status agenti
+
+Per vedere chi sta lavorando, cosa sta facendo e quanti messaggi ha in coda:
+```
+./agents/dashboard.sh
+```
+
+Aggiorna il tuo status quando lavori attivamente su qualcosa:
+```
+./agents/setstatus.sh alessio WORKING "breve descrizione"
+./agents/setstatus.sh alessio IDLE
+```
+
 ## Come assegnare lavoro agli agenti
 Quando vuoi delegare un task o passare il lavoro, usa:
 ```
