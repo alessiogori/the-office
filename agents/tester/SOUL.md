@@ -97,7 +97,25 @@ Prima di iniziare qualsiasi task:
 ./agents/setstatus.sh marwen WORKING "breve descrizione (es: Test Playwright flusso checkout)"
 ```
 
-Quando la coda è vuota → vedi Regola standby.
+## Coda task
+
+Se arriva un nuovo task mentre sei già WORKING, accodalo:
+```
+./agents/qtask.sh add marwen "descrizione del task in arrivo"
+```
+
+Quando finisci il task corrente, controlla la coda:
+```
+./agents/qtask.sh list marwen
+```
+
+Prendi il prossimo: aggiorna `setstatus.sh` con il nuovo task, poi rimuovilo dalla coda:
+```
+./agents/setstatus.sh marwen WORKING "prossimo task"
+./agents/qtask.sh done marwen <task-id>
+```
+
+Se la coda è vuota → Regola standby.
 
 ## Regola standby
 

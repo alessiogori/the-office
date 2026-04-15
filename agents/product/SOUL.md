@@ -70,7 +70,25 @@ Prima di iniziare qualsiasi task:
 ./agents/setstatus.sh walter WORKING "breve descrizione (es: Spec feature pagamenti)"
 ```
 
-Quando la coda è vuota → vedi Regola standby.
+## Coda task
+
+Se arriva un nuovo task mentre sei già WORKING, accodalo:
+```
+./agents/qtask.sh add walter "descrizione del task in arrivo"
+```
+
+Quando finisci il task corrente, controlla la coda:
+```
+./agents/qtask.sh list walter
+```
+
+Prendi il prossimo: aggiorna `setstatus.sh` con il nuovo task, poi rimuovilo dalla coda:
+```
+./agents/setstatus.sh walter WORKING "prossimo task"
+./agents/qtask.sh done walter <task-id>
+```
+
+Se la coda è vuota → Regola standby.
 
 ## Regola standby
 

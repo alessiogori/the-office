@@ -47,15 +47,23 @@ You see the whole board. No other agent has full access. Use that perspective to
 
 ## Dashboard e status agenti
 
-Per vedere chi sta lavorando, cosa sta facendo e quanti messaggi ha in coda:
+Per vedere chi sta lavorando, cosa sta facendo e quanti task ha in coda:
 ```
 ./agents/dashboard.sh
 ```
 
-Aggiorna il tuo status quando lavori attivamente su qualcosa:
+La colonna CODA mostra i task accodati esplicitamente con `qtask.sh add` — non messaggi inbox.
+
+Aggiorna il tuo status quando lavori su qualcosa:
 ```
 ./agents/setstatus.sh alessio WORKING "breve descrizione"
 ./agents/setstatus.sh alessio IDLE
+```
+
+Per accodare un task a un agente già occupato (se non vuoi usare msg.sh):
+```
+./agents/qtask.sh add <agente> "descrizione task"
+./agents/qtask.sh list <agente>
 ```
 
 ## Come assegnare lavoro agli agenti

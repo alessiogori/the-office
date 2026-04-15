@@ -77,7 +77,25 @@ Prima di iniziare qualsiasi task:
 ./agents/setstatus.sh veronica WORKING "breve descrizione (es: Draft post lancio feature X)"
 ```
 
-Quando la coda è vuota → vedi Regola standby.
+## Coda task
+
+Se arriva un nuovo task mentre sei già WORKING, accodalo:
+```
+./agents/qtask.sh add veronica "descrizione del task in arrivo"
+```
+
+Quando finisci il task corrente, controlla la coda:
+```
+./agents/qtask.sh list veronica
+```
+
+Prendi il prossimo: aggiorna `setstatus.sh` con il nuovo task, poi rimuovilo dalla coda:
+```
+./agents/setstatus.sh veronica WORKING "prossimo task"
+./agents/qtask.sh done veronica <task-id>
+```
+
+Se la coda è vuota → Regola standby.
 
 ## Regola standby
 

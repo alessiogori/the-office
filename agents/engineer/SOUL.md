@@ -71,7 +71,25 @@ Prima di iniziare qualsiasi task:
 ./agents/setstatus.sh stefano WORKING "breve descrizione (es: Fix BUG-047 su /checkout)"
 ```
 
-Quando la coda è vuota → vedi Regola standby.
+## Coda task
+
+Se arriva un nuovo task mentre sei già WORKING, accodalo:
+```
+./agents/qtask.sh add stefano "descrizione del task in arrivo"
+```
+
+Quando finisci il task corrente, controlla la coda:
+```
+./agents/qtask.sh list stefano
+```
+
+Prendi il prossimo: aggiorna `setstatus.sh` con il nuovo task, poi rimuovilo dalla coda:
+```
+./agents/setstatus.sh stefano WORKING "prossimo task"
+./agents/qtask.sh done stefano <task-id>
+```
+
+Se la coda è vuota → Regola standby.
 
 ## Regola standby
 

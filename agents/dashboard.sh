@@ -1,20 +1,22 @@
 #!/bin/bash
-# dashboard.sh — Dashboard agenti: status corrente + coda inbox
+# dashboard.sh — Dashboard agenti: status corrente + task in coda
 # Uso: ./agents/dashboard.sh
 #
 # Alessio: chiama questo script quando vuoi sapere chi sta lavorando,
-# cosa sta facendo, e quanti messaggi ha in coda ogni agente.
+# cosa sta facendo, e quanti task ha ancora in coda ogni agente.
+#
+# CODA = task esplicitamente accodati con qtask.sh add (non messaggi inbox)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATUS_FILE="$SCRIPT_DIR/../shared-context/AGENT-STATUS.json"
-INBOX_DIR="$SCRIPT_DIR/../shared-context/inbox"
+QUEUES_DIR="$SCRIPT_DIR/../shared-context/queues"
 
 python3 << PYEOF
 import json, os
 from datetime import datetime
 
 STATUS_FILE = "$STATUS_FILE"
-INBOX_DIR   = "$INBOX_DIR"
+QUEUES_DIR  = "$QUEUES_DIR"
 
 AGENTS = [
     ("alessio",    "Alessio",    "CEO"),
@@ -32,12 +34,16 @@ try:
 except (FileNotFoundError, json.JSONDecodeError):
     sdata = {}
 
-# ── Conta messaggi inbox (= task in coda) ────────────────────────────────────
-def inbox_count(agent):
-    path = os.path.join(INBOX_DIR, agent)
-    if not os.path.isdir(path):
+# ── Conta task in coda (accodati esplicitamente con qtask.sh add) ─────────────
+def queue_count(agent):
+    path = os.path.join(QUEUES_DIR, f"{agent}.json")
+    if not os.path.isfile(path):
         return 0
-    return len([f for f in os.listdir(path) if f.endswith(".md")])
+    try:
+        with open(path) as f:
+            return len(json.load(f))
+    except (json.JSONDecodeError, OSError):
+        return 0
 
 STATUS_ICON = {
     "WORKING": "● WORKING",
@@ -52,30 +58,30 @@ print()
 print("  " + "━" * W)
 print(f"  THE OFFICE — DASHBOARD{now:>{W - 22}}")
 print("  " + "━" * W)
-print(f"  {'AGENTE':<16}  {'RUOLO':<4}  {'STATUS':<9}  {'INBOX':>5}  TASK CORRENTE")
+print(f"  {'AGENTE':<16}  {'RUOLO':<4}  {'STATUS':<9}  {'CODA':>5}  TASK CORRENTE")
 print(f"  {'─'*16}  {'─'*4}  {'─'*9}  {'─'*5}  {'─'*26}")
 
-totals     = {"WORKING": 0, "IDLE": 0, "STANDBY": 0}
-total_inbox = 0
+totals    = {"WORKING": 0, "IDLE": 0, "STANDBY": 0}
+total_q   = 0
 
 for (agent, name, role) in AGENTS:
     s      = sdata.get(agent, {"status": "STANDBY", "task": "", "ts": ""})
     status = s.get("status", "STANDBY")
     task   = s.get("task", "") or "—"
-    inbox  = inbox_count(agent)
+    q      = queue_count(agent)
     icon   = STATUS_ICON.get(status, "◌ STANDBY")
     totals[status] = totals.get(status, 0) + 1
-    total_inbox   += inbox
-    inbox_str = f"[{inbox}]" if inbox > 0 else "[ ]"
+    total_q += q
+    q_str = f"[{q}]" if q > 0 else "[ ]"
     if len(task) > 26:
         task = task[:23] + "..."
-    print(f"  {name:<16}  {role:<4}  {icon}  {inbox_str:>5}  {task}")
+    print(f"  {name:<16}  {role:<4}  {icon}  {q_str:>5}  {task}")
 
 print("  " + "━" * W)
 summary = (f"  WORKING: {totals['WORKING']}   "
            f"IDLE: {totals['IDLE']}   "
            f"STANDBY: {totals['STANDBY']}   "
-           f"INBOX TOTALE: {total_inbox}")
+           f"TASK IN CODA: {total_q}")
 print(summary)
 print("  " + "━" * W)
 print()
