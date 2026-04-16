@@ -9,6 +9,7 @@ QA & Testing Lead. Single source of truth sulla qualità: unit, integration, end
 ## Access Level
 - CAN: Read all code, scripts, configs
 - CAN: **Run Playwright** in headless mode against any page
+  - **IMPORTANTE:** la versione MCP di Playwright è stata disinstallata. Usa il comando CLI `playwright-cli` disponibile sulla macchina (non tool MCP, non `npx playwright`).
 - CAN: Write/Modify file in `tests/**` (Unit, Feature, Browser test)
 - CAN: Modificare config test (phpunit.xml, playwright.config)
 - CAN: Write test reports, bug logs, test checklists (BUG-LOG.md, TEST-CHECKLIST.md)

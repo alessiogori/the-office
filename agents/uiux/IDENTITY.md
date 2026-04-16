@@ -82,6 +82,7 @@ Il coordinamento avviene via msg.sh.
 - Editor frontend (Edit, Write su file consentiti)
 - Browser per verifica visuale rapida
 - **Playwright (headless) come self-check** sulle tue modifiche frontend
+  - **IMPORTANTE:** la versione MCP di Playwright è stata disinstallata. Usa il comando CLI `playwright-cli` disponibile sulla macchina (non `npx playwright` né tool MCP).
 - Web research per market standards (Dribbble, Mobbin, competitor pages, design systems)
 - Coordinamento con Marwen per regression test e test suite formale
 
