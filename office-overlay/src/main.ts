@@ -106,6 +106,14 @@ async function main() {
 
   await listen<StatusMap>("agent-status", (ev) => apply(ev.payload));
 
+  await listen<{ from: string; to: string; msg: string; ts: string }>("agent-msg", (ev) => {
+    const recipient = sprites.get(ev.payload.to);
+    const sender = sprites.get(ev.payload.from);
+    if (recipient) recipient.flash();
+    if (sender) sender.flash();
+    showMsgToast(ev.payload.from, ev.payload.to, ev.payload.msg);
+  });
+
   setupContextMenu();
   setInterval(() => updateClock(), 30000);
   updateClock();
@@ -188,6 +196,18 @@ function moveTooltip(x: number, y: number) {
 
 function hideTooltip() {
   tooltipEl.classList.add("hidden");
+}
+
+function showMsgToast(from: string, to: string, msg: string) {
+  const toast = document.createElement("div");
+  toast.className = "msg-toast";
+  toast.innerHTML = `<b>${escapeHtml(from)}</b> → <b>${escapeHtml(to)}</b><br>${escapeHtml(msg)}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add("show"), 10);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
 }
 
 function escapeHtml(s: string): string {

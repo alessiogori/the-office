@@ -129,3 +129,28 @@ html, body {
 #ctxmenu.hidden {
   display: none;
 }
+
+.msg-toast {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(20, 20, 28, 0.95);
+  color: #f0f0f0;
+  font-size: 11px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(74, 144, 226, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  max-width: 240px;
+  line-height: 1.4;
+  z-index: 25;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+}
+
+.msg-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
