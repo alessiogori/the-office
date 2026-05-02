@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { AGENTS, StatusMap, AgentState } from "./agents";
 import { buildRoom, ROOM_W, ROOM_H, TILE } from "./room";
 import { AgentSprite } from "./agent";
+import { SteamSystem, pulseGlow, pulseMonitor } from "./atmosphere";
 
 const tooltipEl = document.getElementById("tooltip") as HTMLDivElement;
 
@@ -22,8 +23,11 @@ async function main() {
   const world = new Container();
   app.stage.addChild(world);
 
-  const { layer, desks } = buildRoom();
+  const { layer, desks, monitors, steamAnchor, windowGlow } = buildRoom();
   world.addChild(layer);
+
+  const steam = new SteamSystem(steamAnchor.x, steamAnchor.y);
+  layer.addChild(steam);
 
   const sprites = new Map<string, AgentSprite>();
   AGENTS.forEach((def, i) => {
@@ -51,23 +55,36 @@ async function main() {
   app.ticker.add((ticker) => {
     t += ticker.deltaMS;
     sprites.forEach((s) => s.tick(ticker.deltaTime, t));
+    steam.tick(ticker.deltaMS);
+    pulseGlow(windowGlow, t);
+    pulseMonitor(monitors, t);
   });
 
   const apply = (data: StatusMap) => {
+    console.log("[overlay] apply", data);
     for (const [id, state] of Object.entries(data)) {
       const sprite = sprites.get(id);
-      if (sprite) sprite.setState(state as AgentState);
+      if (sprite) {
+        sprite.setState(state as AgentState);
+      } else {
+        console.warn("[overlay] no sprite for id", id);
+      }
     }
   };
 
   try {
     const initial = await invoke<StatusMap | null>("get_status");
+    console.log("[overlay] initial status", initial);
     if (initial) apply(initial);
   } catch (e) {
     console.warn("get_status failed", e);
   }
 
-  await listen<StatusMap>("agent-status", (ev) => apply(ev.payload));
+  const unlisten = await listen<StatusMap>("agent-status", (ev) => {
+    console.log("[overlay] event received", ev);
+    apply(ev.payload);
+  });
+  console.log("[overlay] listener ready", typeof unlisten);
 }
 
 function showTooltip(sprite: AgentSprite, x: number, y: number) {

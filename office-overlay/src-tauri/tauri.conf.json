@@ -23,7 +23,10 @@
         "transparent": true,
         "alwaysOnTop": true,
         "resizable": true,
-        "shadow": false
+        "shadow": true,
+        "center": true,
+        "visible": true,
+        "focus": true
       }
     ],
     "security": {

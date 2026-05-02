@@ -18,11 +18,27 @@ struct AgentState {
 type StatusMap = HashMap<String, AgentState>;
 
 fn status_file_path() -> PathBuf {
-    let mut p = std::env::current_dir().unwrap_or_default();
-    p.pop();
-    p.push("shared-context");
-    p.push("AGENT-STATUS.json");
-    p
+    if let Ok(env_path) = std::env::var("OFFICE_STATUS_FILE") {
+        return PathBuf::from(env_path);
+    }
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if let Ok(cwd) = std::env::current_dir() {
+        for hops in 0..5 {
+            let mut p = cwd.clone();
+            for _ in 0..hops {
+                p.pop();
+            }
+            p.push("shared-context");
+            p.push("AGENT-STATUS.json");
+            candidates.push(p);
+        }
+    }
+    for c in &candidates {
+        if c.exists() {
+            return c.clone();
+        }
+    }
+    candidates.into_iter().next().unwrap_or_default()
 }
 
 fn read_status(path: &PathBuf) -> Option<StatusMap> {
@@ -42,7 +58,12 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle().clone();
             let path = status_file_path();
-            let watch_dir = path.parent().unwrap().to_path_buf();
+            eprintln!("[overlay] watching status file: {}", path.display());
+            let watch_dir = path
+                .parent()
+                .map(|p| p.to_path_buf())
+                .unwrap_or_else(|| PathBuf::from("."));
+            eprintln!("[overlay] watching dir: {}", watch_dir.display());
 
             if let Some(initial) = read_status(&path) {
                 let _ = handle.emit("agent-status", initial);
@@ -65,9 +86,17 @@ pub fn run() {
                 loop {
                     match rx.recv_timeout(Duration::from_secs(60)) {
                         Ok(Ok(event)) => {
-                            if event.paths.iter().any(|p| p == &target) {
+                            let hit = event.paths.iter().any(|p| {
+                                p == &target
+                                    || p.file_name() == target.file_name()
+                            });
+                            if hit {
+                                eprintln!("[overlay] file event: {:?}", event.kind);
                                 if let Some(s) = read_status(&target) {
+                                    eprintln!("[overlay] emit agent-status ({} agents)", s.len());
                                     let _ = handle.emit("agent-status", s);
+                                } else {
+                                    eprintln!("[overlay] read_status returned None");
                                 }
                             }
                         }
