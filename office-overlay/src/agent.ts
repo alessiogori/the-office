@@ -1,7 +1,9 @@
 import { Container, Graphics, Sprite, Text } from "pixi.js";
 import { AgentDef, AgentState, AgentStatus, STATUS_COLORS } from "./agents";
-import { TILE } from "./room";
+import { TILE, ROOM_W, ROOM_H } from "./room";
 import { CHAR_TILES, tile } from "./kenney";
+
+interface WanderTarget { x: number; y: number; ttl: number; }
 
 export class AgentSprite extends Container {
   private body: Sprite;
@@ -11,12 +13,20 @@ export class AgentSprite extends Container {
   private bobBase: number;
   private bobPhase: number;
   public state: AgentState = { status: "STANDBY", task: "", ts: "" };
+  private deskX: number;
+  private deskY: number;
+  private wanderTarget: WanderTarget | null = null;
+  private wanderCooldown = 0;
+  private badge: Text | null = null;
+  public flashUntil = 0;
 
   constructor(public def: AgentDef, deskX: number, deskY: number) {
     super();
-    this.x = deskX * TILE + TILE / 2;
-    this.y = deskY * TILE + TILE - 4;
-    this.bobBase = this.y;
+    this.deskX = deskX * TILE + TILE / 2;
+    this.deskY = deskY * TILE + TILE - 4;
+    this.x = this.deskX;
+    this.y = this.deskY;
+    this.bobBase = this.deskY;
     this.bobPhase = Math.random() * Math.PI * 2;
 
     const coords = CHAR_TILES[def.id] ?? [0, 8];
@@ -77,12 +87,42 @@ export class AgentSprite extends Container {
   }
 
   setState(state: AgentState) {
+    const prevStatus = this.state.status;
     this.state = state;
     const status = state.status as AgentStatus;
     this.drawStatusDot(STATUS_COLORS[status] ?? STATUS_COLORS.STANDBY);
     this.bubbleTxt.text = this.bubbleFor(status);
     this.bubble.visible = status !== "STANDBY";
+    this.updateBadge(state.task);
+    if (status !== "IDLE" && prevStatus === "IDLE") {
+      this.wanderTarget = null;
+    }
   }
+
+  private updateBadge(task: string) {
+    const emoji = badgeFor(task);
+    if (!emoji) {
+      if (this.badge) {
+        this.removeChild(this.badge);
+        this.badge.destroy();
+        this.badge = null;
+      }
+      return;
+    }
+    if (!this.badge) {
+      this.badge = new Text({
+        text: emoji,
+        style: { fontFamily: "system-ui", fontSize: 8 },
+      });
+      this.badge.anchor.set(0.5);
+      this.badge.x = -7;
+      this.badge.y = -13;
+      this.addChild(this.badge);
+    }
+    this.badge.text = emoji;
+  }
+
+  flash() { this.flashUntil = performance.now() + 1500; }
 
   private bubbleFor(s: AgentStatus): string {
     switch (s) {
@@ -92,19 +132,86 @@ export class AgentSprite extends Container {
     }
   }
 
-  tick(_dt: number, t: number) {
+  tick(dtMs: number, t: number) {
     if (this.state.status === "WORKING") {
+      this.x = this.deskX;
       this.y = this.bobBase + Math.sin(t * 0.012 + this.bobPhase) * 1.5;
       this.body.rotation = Math.sin(t * 0.025 + this.bobPhase) * 0.04;
     } else if (this.state.status === "IDLE") {
-      this.y = this.bobBase + Math.sin(t * 0.004 + this.bobPhase) * 1.2;
-      this.body.rotation = Math.sin(t * 0.004 + this.bobPhase) * 0.06;
+      this.tickWander(dtMs);
+      this.body.rotation = Math.sin(t * 0.008 + this.bobPhase) * 0.08;
     } else {
+      this.x = this.deskX;
       this.y = this.bobBase;
       this.body.rotation = 0;
     }
     if (this.bubble.visible) {
       this.bubble.y = Math.sin(t * 0.005 + this.bobPhase) * 0.6;
     }
+    if (this.flashUntil > performance.now()) {
+      const k = (this.flashUntil - performance.now()) / 1500;
+      this.body.tint = lerpColor(0xffffff, 0xffe066, k);
+      this.scale.set(1 + k * 0.2);
+    } else if (this.scale.x !== 1) {
+      this.body.tint = 0xffffff;
+      this.scale.set(1);
+    }
   }
+
+  private tickWander(dtMs: number) {
+    this.wanderCooldown -= dtMs;
+    if (!this.wanderTarget && this.wanderCooldown <= 0) {
+      this.pickWanderTarget();
+    }
+    if (this.wanderTarget) {
+      const dx = this.wanderTarget.x - this.x;
+      const dy = this.wanderTarget.y - this.y;
+      const dist = Math.hypot(dx, dy);
+      const speed = 0.025 * dtMs;
+      if (dist < speed) {
+        this.x = this.wanderTarget.x;
+        this.y = this.wanderTarget.y;
+        this.bobBase = this.y;
+        this.wanderTarget = null;
+        this.wanderCooldown = 1500 + Math.random() * 3500;
+      } else {
+        this.x += (dx / dist) * speed;
+        this.y += (dy / dist) * speed;
+        this.bobBase = this.y;
+      }
+    }
+  }
+
+  private pickWanderTarget() {
+    const spots: WanderTarget[] = [
+      { x: this.deskX, y: this.deskY, ttl: 0 },
+      { x: (ROOM_W - 4) * TILE + TILE / 2, y: (ROOM_H - 4) * TILE, ttl: 0 },
+      { x: (ROOM_W / 2) * TILE, y: (ROOM_H / 2) * TILE + TILE, ttl: 0 },
+      { x: this.deskX + (Math.random() - 0.5) * TILE * 4, y: this.deskY + (Math.random() - 0.5) * TILE * 2, ttl: 0 },
+    ];
+    this.wanderTarget = spots[Math.floor(Math.random() * spots.length)];
+  }
+}
+
+function lerpColor(a: number, b: number, k: number): number {
+  k = Math.max(0, Math.min(1, k));
+  const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
+  const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
+  const r = Math.round(ar + (br - ar) * k);
+  const g = Math.round(ag + (bg - ag) * k);
+  const bl = Math.round(ab + (bb - ab) * k);
+  return (r << 16) | (g << 8) | bl;
+}
+
+function badgeFor(task: string): string | null {
+  const t = task.toLowerCase();
+  if (/bug|fix|error|crash/.test(t)) return "🐛";
+  if (/test|qa|coverage|e2e|spec/.test(t)) return "🧪";
+  if (/feat|nuova|build|implement/.test(t)) return "✨";
+  if (/doc|readme|guide|changelog/.test(t)) return "📝";
+  if (/deploy|release|prod|ci/.test(t)) return "🚀";
+  if (/refactor|cleanup|tech debt/.test(t)) return "🔧";
+  if (/design|ui|ux|layout/.test(t)) return "🎨";
+  if (/meeting|call|sync/.test(t)) return "💬";
+  return null;
 }
