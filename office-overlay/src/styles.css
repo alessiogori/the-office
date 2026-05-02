@@ -1,0 +1,79 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: transparent;
+  font-family: -apple-system, system-ui, sans-serif;
+  user-select: none;
+}
+
+#drag-handle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 18px;
+  background: rgba(20, 20, 28, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 10;
+  cursor: grab;
+}
+
+#drag-handle:active {
+  cursor: grabbing;
+}
+
+#stage {
+  position: absolute;
+  top: 18px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#stage canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+#tooltip {
+  position: fixed;
+  background: rgba(20, 20, 28, 0.95);
+  color: #f0f0f0;
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+  z-index: 20;
+  max-width: 220px;
+  line-height: 1.4;
+}
+
+#tooltip .name {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+#tooltip .status {
+  font-size: 10px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#tooltip .task {
+  margin-top: 4px;
+  font-size: 10px;
+  opacity: 0.85;
+  font-style: italic;
+}
+
+#tooltip.hidden {
+  display: none;
+}
