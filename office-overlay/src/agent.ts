@@ -1,12 +1,96 @@
-import { Container, Graphics, Sprite, Text } from "pixi.js";
+import { Container, Graphics, Text } from "pixi.js";
 import { AgentDef, AgentState, AgentStatus, STATUS_COLORS } from "./agents";
 import { TILE, ROOM_W, ROOM_H } from "./room";
-import { CHAR_TILES, tile } from "./kenney";
+
+const P = 2; // pixel block size
+const SKIN = 0xf5c8a0;
+const PANT = 0x3a3a5a;
+const SHOE = 0x222233;
 
 interface WanderTarget { x: number; y: number; ttl: number; }
 
+/** Disegna personaggio stile Pokémon overworld (vista frontale) */
+function drawChar(id: string, clothColor: number): Graphics {
+  const g = new Graphics();
+
+  // capelli / colore unico per agente
+  const hairColors: Record<string, number> = {
+    alessio:    0x2c1a0e, // scuro
+    stefano:    0x1a1a2e, // nero bluastro
+    walter:     0x5c3317, // castano
+    veronica:   0xc0392b, // rosso
+    alessandra: 0x6c3483, // viola
+    marwen:     0x1e8449, // verde scuro
+  };
+  const hair = hairColors[id] ?? 0x333333;
+
+  // — testa —
+  g.rect(-3 * P, -8 * P, 6 * P, 2 * P).fill(hair);         // capelli top
+  g.rect(-3 * P, -6 * P, 6 * P, 4 * P).fill(SKIN);          // faccia
+  // occhi
+  g.rect(-2 * P, -4 * P, P, P).fill(0x222233);
+  g.rect(P,      -4 * P, P, P).fill(0x222233);
+  // bocca
+  g.rect(-P, -2 * P, 2 * P, P).fill(0xc07060);
+
+  // — corpo —
+  g.rect(-3 * P, -2 * P, 6 * P, 4 * P).fill(clothColor);    // torso
+  // braccia
+  g.rect(-4 * P, -2 * P, P, 3 * P).fill(clothColor);
+  g.rect(3 * P,  -2 * P, P, 3 * P).fill(clothColor);
+  // mani
+  g.rect(-4 * P, P,  P, P).fill(SKIN);
+  g.rect(3 * P,  P,  P, P).fill(SKIN);
+
+  // — gambe —
+  g.rect(-3 * P, 2 * P, 2 * P, 3 * P).fill(PANT);
+  g.rect(P,      2 * P, 2 * P, 3 * P).fill(PANT);
+  // scarpe
+  g.rect(-3 * P, 5 * P, 2 * P, P).fill(SHOE);
+  g.rect(P,      5 * P, 2 * P, P).fill(SHOE);
+
+  // — accessorio unico —
+  switch (id) {
+    case "alessio":
+      // corona dorata (3 punte)
+      g.rect(-3 * P, -10 * P, 2 * P, 2 * P).fill(0xf5b400);
+      g.rect(-P,     -11 * P, 2 * P, 3 * P).fill(0xf5b400);
+      g.rect(P,      -10 * P, 2 * P, 2 * P).fill(0xf5b400);
+      break;
+    case "stefano":
+      // occhiali (barretta nera orizzontale)
+      g.rect(-3 * P, -4 * P, 2 * P, P).fill(0x111122);
+      g.rect(P,      -4 * P, 2 * P, P).fill(0x111122);
+      g.rect(-P,     -4 * P, 2 * P, P).fill(0x777788); // ponte
+      break;
+    case "walter":
+      // clipboard in mano destra (piccolo rettangolo bianco)
+      g.rect(3 * P, -3 * P, 3 * P, 4 * P).fill(0xf0f0e0);
+      g.rect(3 * P, -3 * P, 3 * P, P).fill(0xaaaaaa);
+      break;
+    case "veronica":
+      // codino a destra
+      g.rect(3 * P, -7 * P, P,     4 * P).fill(hair);
+      g.rect(4 * P, -5 * P, 2 * P, P).fill(hair);
+      break;
+    case "alessandra":
+      // matita / stylus sopra la testa
+      g.rect(-P, -13 * P, P, 5 * P).fill(0xf5b400);
+      g.rect(-P, -13 * P, P, P).fill(0xee3333);   // punta
+      break;
+    case "marwen":
+      // cuffie (cerchi ai lati della testa)
+      g.rect(-5 * P, -7 * P, P, 2 * P).fill(0x222244);
+      g.rect(4 * P,  -7 * P, P, 2 * P).fill(0x222244);
+      g.rect(-5 * P, -8 * P, 6 * P, P).fill(0x222244); // fascia top
+      break;
+  }
+
+  return g;
+}
+
 export class AgentSprite extends Container {
-  private body: Sprite;
+  private body: Graphics;
   private statusDot: Graphics;
   private bubble: Container;
   private bubbleTxt: Text;
@@ -29,14 +113,13 @@ export class AgentSprite extends Container {
     this.bobBase = this.deskY;
     this.bobPhase = Math.random() * Math.PI * 2;
 
-    const coords = CHAR_TILES[def.id] ?? [0, 8];
-    this.body = new Sprite(tile(coords[0], coords[1]));
-    this.body.anchor.set(0.5, 1);
-    this.body.scale.set(0.85);
+    this.body = drawChar(def.id, def.color);
+    this.body.scale.set(0.9);
     this.addChild(this.body);
 
+    // etichetta nome (piccola, sopra)
     const nameTag = new Text({
-      text: def.name[0],
+      text: def.name,
       style: {
         fontFamily: "monospace",
         fontSize: 5,
@@ -47,7 +130,7 @@ export class AgentSprite extends Container {
     });
     nameTag.anchor.set(0.5);
     nameTag.x = 0;
-    nameTag.y = -16;
+    nameTag.y = -22;
     this.addChild(nameTag);
 
     this.statusDot = new Graphics();
@@ -75,13 +158,13 @@ export class AgentSprite extends Container {
 
     this.eventMode = "static";
     this.cursor = "pointer";
-    this.hitArea = { contains: (x: number, y: number) => x > -8 && x < 8 && y > -16 && y < 2 };
+    this.hitArea = { contains: (x: number, y: number) => x > -8 && x < 8 && y > -18 && y < 4 };
   }
 
   private drawStatusDot(color: number) {
     this.statusDot.clear();
     this.statusDot
-      .circle(7, -13, 2)
+      .circle(8, -14, 2.5)
       .fill(color)
       .stroke({ color: 0x111122, width: 0.5 });
   }
@@ -115,8 +198,8 @@ export class AgentSprite extends Container {
         style: { fontFamily: "system-ui", fontSize: 8 },
       });
       this.badge.anchor.set(0.5);
-      this.badge.x = -7;
-      this.badge.y = -13;
+      this.badge.x = -9;
+      this.badge.y = -14;
       this.addChild(this.badge);
     }
     this.badge.text = emoji;
@@ -139,7 +222,7 @@ export class AgentSprite extends Container {
       this.body.rotation = Math.sin(t * 0.025 + this.bobPhase) * 0.04;
     } else if (this.state.status === "IDLE") {
       this.tickWander(dtMs);
-      this.body.rotation = Math.sin(t * 0.008 + this.bobPhase) * 0.08;
+      this.body.rotation = Math.sin(t * 0.008 + this.bobPhase) * 0.06;
     } else {
       this.x = this.deskX;
       this.y = this.bobBase;
@@ -151,7 +234,7 @@ export class AgentSprite extends Container {
     if (this.flashUntil > performance.now()) {
       const k = (this.flashUntil - performance.now()) / 1500;
       this.body.tint = lerpColor(0xffffff, 0xffe066, k);
-      this.scale.set(1 + k * 0.2);
+      this.scale.set(1 + k * 0.18);
     } else if (this.scale.x !== 1) {
       this.body.tint = 0xffffff;
       this.scale.set(1);
