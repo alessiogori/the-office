@@ -26,3 +26,4 @@ dist-ssr
 /office-overlay/dist
 /office-overlay/src-tauri/target
 /office-overlay/src-tauri/gen
+src/assets/kenney/**/*.zip

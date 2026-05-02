@@ -7,6 +7,7 @@ import { buildRoom, ROOM_W, ROOM_H, TILE } from "./room";
 import { AgentSprite } from "./agent";
 import { SteamSystem, pulseGlow, pulseMonitor } from "./atmosphere";
 import { currentDayNight } from "./daynight";
+import { loadKenney } from "./kenney";
 
 const tooltipEl = document.getElementById("tooltip") as HTMLDivElement;
 const ctxMenuEl = document.getElementById("ctxmenu") as HTMLDivElement;
@@ -25,6 +26,8 @@ async function main() {
     resizeTo: stage,
   });
   stage.appendChild(app.canvas);
+
+  await loadKenney();
 
   const world = new Container();
   app.stage.addChild(world);
