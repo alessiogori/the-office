@@ -8,8 +8,17 @@
     <script type="module" src="/src/main.ts" defer></script>
   </head>
   <body>
-    <div id="drag-handle" data-tauri-drag-region></div>
+    <div id="drag-handle" data-tauri-drag-region>
+      <span id="clock"></span>
+    </div>
     <div id="stage"></div>
     <div id="tooltip" class="hidden"></div>
+    <div id="ctxmenu" class="hidden">
+      <div data-action="toggle-aot">Always on top: <span id="aot-state">on</span></div>
+      <div data-action="opacity-up">Opacità +</div>
+      <div data-action="opacity-down">Opacità −</div>
+      <div data-action="reset-pos">Centra finestra</div>
+      <div data-action="hide">Nascondi</div>
+    </div>
   </body>
 </html>

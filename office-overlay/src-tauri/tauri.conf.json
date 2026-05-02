@@ -10,15 +10,16 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "withGlobalTauri": true,
     "windows": [
       {
         "label": "main",
         "title": "the-office",
-        "width": 480,
-        "height": 320,
-        "minWidth": 320,
-        "minHeight": 240,
+        "width": 800,
+        "height": 540,
+        "minWidth": 400,
+        "minHeight": 280,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
