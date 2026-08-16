@@ -79,3 +79,35 @@ PY
     assert_success
   done
 }
+
+@test "ogni logTemplate referenziato esiste come file" {
+  run python3 - "$OFFICE_ROOT/catalog/roles.json" "$OFFICE_ROOT/catalog/templates" <<'PY'
+import json, os, sys
+roles = json.load(open(sys.argv[1]))["roles"]
+missing = []
+for r in roles:
+    t = r.get("logTemplate")
+    if t and not os.path.isfile(os.path.join(sys.argv[2], t + ".md")):
+        missing.append(f"{r['slug']}: template '{t}.md' mancante")
+if missing:
+    print("\n".join(missing))
+    sys.exit(1)
+PY
+  assert_success
+}
+
+@test "le sei anime storiche esistono" {
+  for slug in ceo engineer product marketing uiux tester; do
+    [ -f "$OFFICE_ROOT/catalog/souls/$slug.md" ]
+  done
+}
+
+@test "il template heartbeat esiste e contiene il segnaposto del nome" {
+  [ -f "$OFFICE_ROOT/catalog/templates/heartbeat.md" ]
+  run grep -q "__AGENT_NAME__" "$OFFICE_ROOT/catalog/templates/heartbeat.md"
+  assert_success
+}
+
+@test "le istruzioni di authoring esistono" {
+  [ -f "$OFFICE_ROOT/catalog/SOUL-AUTHORING.md" ]
+}
