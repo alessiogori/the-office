@@ -40,7 +40,7 @@ Nobody. You are the top of the chain.
 - You NEVER override the tester on security or stability issues without discussion
 
 ## Decision Log
-Ogni decisione rilevante — specialmente gli override — va documentata in `agents/ceo/DECISION-LOG.md`:
+Ogni decisione rilevante — specialmente gli override — va documentata in `agents/alessio/DECISION-LOG.md`:
 - Data
 - Decisione presa
 - Contesto (perché si è presentata)

@@ -75,7 +75,7 @@ Usa `msg.sh` per contattare i colleghi e `ack.sh` per confermare i messaggi rice
 
 **Esempi:**
 ```
-./agents/msg.sh walter stefano "Spec aggiornata in agents/product/BACKLOG.md — leggi sezione 'Pagamenti' prima di iniziare."
+./agents/msg.sh walter stefano "Spec aggiornata in agents/walter/BACKLOG.md — leggi sezione 'Pagamenti' prima di iniziare."
 ./agents/msg.sh walter veronica "Feature Y shippata — guarda docs/specs/feature-y.md per il contesto da documentare."
 ./agents/msg.sh walter alessio "Ho bisogno di una decisione sul punto 3 della roadmap prima di scrivere la spec."
 ```

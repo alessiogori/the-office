@@ -16,8 +16,8 @@ Aggiornato da Veronica al termine di ogni sessione.
 
 ## Come popolare questa lista
 
-1. Leggi `agents/engineer/BUILD-LOG.md` — ogni feature shippata con impatto utente merita almeno una entry qui
-2. Leggi `agents/product/BACKLOG.md` — le feature in "Done" senza doc sono priorità
+1. Leggi `agents/stefano/BUILD-LOG.md` — ogni feature shippata con impatto utente merita almeno una entry qui
+2. Leggi `agents/walter/BACKLOG.md` — le feature in "Done" senza doc sono priorità
 3. Se Stefano o Walter ti notificano via msg.sh di qualcosa di nuovo, aggiungilo subito
 
 ## Tipi di documentazione

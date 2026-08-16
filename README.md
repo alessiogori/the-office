@@ -1,8 +1,8 @@
 # The Office
 
-Un sistema multi-agente per gestire progetti con AI coding tools. Funziona con Claude Code, Cursor, Copilot, Windsurf, Gemini CLI, Codex, Devin e Replit. Ogni agente ha un'anima, un'identità e confini precisi. Aggiungilo a qualsiasi progetto e inizia a spedire.
+Un sistema multi-agente per gestire progetti con AI coding tools. Funziona con Claude Code, Cursor, Copilot, Windsurf, Gemini CLI, Codex, Devin e Replit. Scegli quante persone ti servono e che ruolo hanno, da un catalogo di 36 figure. Ogni agente ha un'anima, un'identità e confini precisi.
 
-## 6 agenti. 6 terminali. 1 contesto condiviso. Zero standup.
+## Il tuo team. I tuoi terminali. 1 contesto condiviso. Zero standup.
 
 > Alessio dà la direzione. Walter gestisce il roadmap. Veronica scrive i contenuti. Stefano costruisce. Alessandra giudica ogni pagina senza pietà. Marwen rompe tutto prima che lo facciano gli utenti. Si coordinano tramite file, non riunioni.
 
@@ -34,102 +34,105 @@ Produzione
 
 Niente va in produzione senza passare da Alessandra e Marwen.
 
-## Gli agenti
+## Il team di default
 
-| Agente | Nome | Ruolo | File di log |
-|--------|------|-------|-------------|
-| CEO | Alessio | Strategia, decisioni finali, override | — |
-| Engineer | Stefano | Build, bug fix, deploy | `BUILD-LOG.md` |
-| Product | Walter | Specs, roadmap, priorità | `BACKLOG.md` |
-| Marketing | Veronica | Contenuti, brand, crescita | `CONTENT-CALENDAR.md` |
-| UI/UX Specialist | Alessandra | Review visivo, Playwright headless, standard di mercato | `UI-REVIEW-LOG.md` |
-| Tester | Marwen | QA, bug reporting, quality enforcement | `BUG-LOG.md` |
+Il wizard non impone nessun team. Questo è quello che gira in questo repo, e resta un buon punto di partenza per un progetto software:
 
-## Cosa ti serve
+| Nome | Ruolo | File di log |
+|------|-------|-------------|
+| Alessio | CEO / Founder | — |
+| Stefano | Engineer (full-stack) | `BUILD-LOG.md` |
+| Walter | Product Manager | `BACKLOG.md` |
+| Veronica | Marketing & Documentation | `CONTENT-CALENDAR.md` |
+| Alessandra | UI/UX Specialist | `UI-REVIEW-LOG.md` |
+| Marwen | Tester / QA | `BUG-LOG.md` |
 
-Queste cartelle vanno nel tuo progetto:
-
-| Cartella/File | Cosa fa |
-|---------------|---------|
-| `agents/` | Le definizioni dei 6 agenti (SOUL.md, IDENTITY.md, HEARTBEAT.md ciascuno) |
-| `shared-context/` | THESIS.md, ROADMAP.md, BRAND-GUIDE.md — letti da tutti gli agenti |
-| `CLAUDE.md` | Regole e ruoli degli agenti (aggiungilo al tuo esistente) |
+Un team può essere anche molto diverso: un solo Project Manager e due backend, oppure un CEO con marketing, SEO e social e nessuno sviluppatore. Chi c'è è scritto in `shared-context/TEAM.json`, e tutti gli script leggono da lì.
 
 ## Quick Start
 
-### Opzione 1: Aggiungi a un progetto esistente (consigliato)
-
-Hai già un progetto con il suo CLAUDE.md? Aggiungi solo il sistema agenti.
-
-**Step 1:** Aggiungi le regole agenti al `CLAUDE.md` del tuo progetto:
-
-```markdown
-## Sistema Multi-Agente
-
-Questo progetto usa un sistema multi-agente. Ogni agente ha ruolo, personalità e confini di accesso definiti.
-
-### Ruoli
-- **CEO (Alessio)** — supervisione strategica, decisioni finali. Accesso: tutto. Config: agents/ceo/
-- **Engineer (Stefano)** — build, bug fix, deploy. Accesso: solo codice. Config: agents/engineer/
-- **Product (Walter)** — strategia, roadmap, specs. Accesso: solo docs prodotto. Config: agents/product/
-- **Marketing (Veronica)** — contenuti, brand, crescita. Accesso: solo marketing/. Config: agents/marketing/
-- **UI/UX Specialist (Alessandra)** — review visivo, Playwright headless, standard di mercato. Accesso: legge frontend, scrive UI-REVIEW-LOG.md. Config: agents/uiux/
-- **Tester (Marwen)** — QA, bug reporting. Accesso: legge tutto, scrive solo report. Config: agents/tester/
-
-### Regole
-1. Ogni agente rimane nel suo dominio.
-2. Ogni agente legge SOUL.md e IDENTITY.md all'avvio.
-3. HEARTBEAT.md viene aggiornato a fine sessione.
-4. In caso di dubbio, controlla shared-context/THESIS.md.
-```
-
-**Step 2:** Scarica i file agente:
-1. Vai su [questo repo su GitHub](https://github.com/alessiogori/the-office)
-2. Clicca il bottone verde **Code** → **Download ZIP**
-3. Decomprimi e copia queste due cartelle nel tuo progetto:
-   - `agents/` → `tuo-progetto/agents/`
-   - `shared-context/` → `tuo-progetto/shared-context/`
-
-**Step 3:** Apri la cartella `shared-context/` e personalizza i file:
-- `THESIS.md` — sostituisci con la tua visione e i tuoi principi
-- `ROADMAP.md` — sostituisci con il tuo roadmap attuale
-- `BRAND-GUIDE.md` — sostituisci con la tua voce, tono e stile
-
-**Step 4:** Apri 6 terminali e avvia ogni agente:
-
 ```bash
-# Terminale 1: CEO
-claude "Sei Alessio, il CEO. Leggi agents/ceo/SOUL.md e agents/ceo/IDENTITY.md. Controlla i HEARTBEAT.md di tutti gli agenti e imposta le priorità di oggi."
-
-# Terminale 2: Engineer
-claude "Sei Stefano, l'Engineer. Leggi agents/engineer/SOUL.md e agents/engineer/IDENTITY.md. Controlla BUILD-LOG.md e inizia a costruire."
-
-# Terminale 3: Product
-claude "Sei Walter, il Product Lead. Leggi agents/product/SOUL.md e agents/product/IDENTITY.md. Controlla BACKLOG.md e affina la spec prioritaria."
-
-# Terminale 4: Marketing
-claude "Sei Veronica, il Marketing Lead. Leggi agents/marketing/SOUL.md e agents/marketing/IDENTITY.md. Controlla CONTENT-CALENDAR.md e scrivi il prossimo post."
-
-# Terminale 5: UI/UX Specialist
-claude "Sei Alessandra, la UI/UX Specialist. Leggi agents/uiux/SOUL.md e agents/uiux/IDENTITY.md. Controlla cosa ha spedito Stefano e avvia Playwright headless su quelle pagine."
-
-# Terminale 6: Tester
-claude "Sei Marwen, il Tester. Leggi agents/tester/SOUL.md e agents/tester/IDENTITY.md. Controlla cosa ha passato Alessandra e inizia i test funzionali."
-```
-
-Fatto. Ogni agente carica la sua anima e rimane nel suo dominio.
-
-### Opzione 2: Setup automatico con `setup.sh`
-
-Clona il repo e lancia lo script interattivo. Ti chiede nomi progetto, tech stack, nomi agenti e installa tutto nella directory che scegli:
-
-```bash
-git clone https://github.com/alessiogori/the-office.git
+git clone --recurse-submodules https://github.com/alessiogori/the-office.git
 cd the-office
 ./setup.sh
 ```
 
-Lo script genera `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, tutti i file agente, `msg.sh`, `ack.sh` e `launch.sh` con i nomi che hai scelto.
+Il wizard chiede, in quest'ordine:
+
+1. Dove installare, nome del progetto, descrizione, stack, brand
+2. **Quante persone** servono nel team (1-12)
+3. **Chi coordina** — obbligatorio, si sceglie tra CEO, Project Manager, Tech Lead, Delivery Lead e Chief of Staff
+4. Il ruolo di ogni altra persona, cercandolo nel catalogo
+5. Il nome di ognuna
+
+Poi mostra il team e chiede conferma. Niente viene scritto prima di quel sì.
+
+Richiede [gum](https://github.com/charmbracelet/gum) per le schermate: se manca, il wizard te lo dice e propone il comando di installazione.
+
+### Senza TUI, o per setup riproducibili
+
+```bash
+./setup.sh --config team.json --target ~/Code/mio-progetto
+```
+
+```json
+{
+  "project": { "name": "acme", "description": "…", "stack": "Laravel, Vue", "brand": "Acme" },
+  "team": [
+    { "role": "pm",       "name": "Giulia" },
+    { "role": "backend",  "name": "Marco" },
+    { "role": "backend",  "name": "Luca" },
+    { "role": "tester",   "name": "Davide" }
+  ]
+}
+```
+
+La prima persona deve avere un ruolo di coordinamento. Due persone possono avere lo stesso ruolo: si distinguono per nome. `--save-config` esporta le scelte di una sessione interattiva, per rifarla identica altrove.
+
+### Avviare gli agenti
+
+```bash
+./agents/iterm.sh all        # una finestra iTerm2 per ciascuno, colori distinti
+./agents/launch.sh <id>      # una sola persona nel terminale corrente
+./agents/dashboard.sh        # chi c'è, chi lavora, su cosa
+```
+
+## Aggiungere una persona
+
+Un team cambia. `setup.sh` serve una volta sola, `hire.sh` tutte le altre:
+
+```bash
+./agents/hire.sh                      # interattivo: ruolo dal catalogo, poi nome
+./agents/hire.sh security "Niccolò"   # diretto, senza gum
+```
+
+Crea la cartella, aggiorna il manifest, registra inbox e coda. Se un passo fallisce, i precedenti vengono annullati: non resta mai un mezzo agente.
+
+Rimuovere una persona non è previsto: cancellare log, inbox e messaggi inviati è una decisione che merita più di un comando.
+
+## Il catalogo
+
+36 figure in sette categorie, in `catalog/roles.json`:
+
+| Categoria | Figure |
+|-----------|--------|
+| Coordinamento | CEO, Project Manager, Tech Lead, Delivery Lead, Chief of Staff |
+| Prodotto e ricerca | Product Manager, User Researcher, Market Researcher, Business Analyst, Data Analyst |
+| Design | UI/UX, Graphic Designer, UX Writer, Motion Designer |
+| Engineering | Full-stack, Backend, Frontend, Mobile, DevOps, Data Engineer, ML Engineer, Architect, DBA |
+| Qualità e sicurezza | Tester, Automation & Performance, Security, Accessibility |
+| Go-to-market | Marketing & Docs, Copywriter, SEO, Social, Sales, Support |
+| Operations | Technical Writer, Legal & Compliance, Finance |
+
+Ogni voce porta missione, cosa può e cosa **non** può fare, con chi collabora, e un **attrito dichiarato**: contro chi spinge e su cosa. Quel campo è ciò che impedisce a un agente di diventare un sì-uomo.
+
+Serve una figura che non c'è? Aggiungi una voce al JSON: `hire.sh` la vede subito, senza toccare codice.
+
+## Le anime
+
+Sei ruoli hanno un `SOUL.md` scritto a mano in `catalog/souls/`. Gli altri trenta no, ed è voluto: quando avvii per la prima volta un agente senza anima, l'anima viene **scritta in quel momento**, leggendo il suo `ROLE-BRIEF.md`, la THESIS e la BRAND-GUIDE del tuo progetto.
+
+Un tester in un sistema di pagamenti e un tester in un blog non hanno le stesse ossessioni. Scrivere l'anima a runtime invece che nel catalogo è ciò che permette la differenza.
 
 ## Comunicazione tra agenti
 
@@ -142,7 +145,7 @@ Gli agenti si mandano messaggi tramite due script in `agents/`:
 # es: ./agents/msg.sh stefano walter "Modulo pagamenti pronto. Rivedi docs/payments.md."
 ```
 
-Ogni agente deve identificarsi come mittente. Il messaggio che arriva in iTerm2:
+Ogni agente deve identificarsi come mittente. Gli id validi sono quelli in `shared-context/TEAM.json`: se ne sbagli uno, lo script te li elenca. Il messaggio che arriva in iTerm2:
 
 ```
 --- MESSAGGIO IN ARRIVO ---
@@ -186,57 +189,45 @@ Il log è append-only: nessuna riga viene mai riscritta. `SENT` e `ACK` sono eve
 tuo-progetto/
 ├── CLAUDE.md                    ← la tua config esistente + regole agenti
 ├── agents/
+│   ├── lib/
+│   │   ├── team.sh              ← chi c'è nel team (usata da ogni script)
+│   │   ├── roster.sh            ← chi potrebbe esserci (catalogo, generazione)
+│   │   └── tui.sh               ← schermate gum
 │   ├── msg.sh                   ← invia messaggi strutturati tra agenti
 │   ├── ack.sh                   ← conferma ricezione di un messaggio
-│   ├── launch.sh                ← avvia tutti gli agenti in iTerm2
-│   ├── ceo/                     ← Alessio — supervisione strategica
-│   │   ├── SOUL.md
-│   │   ├── IDENTITY.md
-│   │   └── HEARTBEAT.md
-│   ├── engineer/                ← Stefano — build, fix, deploy
-│   │   ├── SOUL.md
-│   │   ├── IDENTITY.md
-│   │   ├── HEARTBEAT.md
-│   │   └── BUILD-LOG.md
-│   ├── product/                 ← Walter — strategia, roadmap, specs
-│   │   ├── SOUL.md
-│   │   ├── IDENTITY.md
-│   │   ├── HEARTBEAT.md
-│   │   └── BACKLOG.md
-│   ├── marketing/               ← Veronica — contenuti, brand, crescita
-│   │   ├── SOUL.md
-│   │   ├── IDENTITY.md
-│   │   ├── HEARTBEAT.md
-│   │   └── CONTENT-CALENDAR.md
-│   ├── uiux/                    ← Alessandra — review visivo, Playwright, standard di mercato
-│   │   ├── SOUL.md
-│   │   ├── IDENTITY.md
-│   │   ├── HEARTBEAT.md
-│   │   └── UI-REVIEW-LOG.md
-│   └── tester/                  ← Marwen — QA, rompe tutto prima degli utenti
-│       ├── SOUL.md
-│       ├── IDENTITY.md
-│       ├── HEARTBEAT.md
-│       ├── BUG-LOG.md
-│       └── TEST-CHECKLIST.md
+│   ├── hire.sh                  ← aggiunge una persona al team
+│   ├── iterm.sh                 ← apre una finestra per agente
+│   ├── launch.sh                ← avvia un agente
+│   ├── dashboard.sh             ← stato del team
+│   ├── _authoring/
+│   │   └── SOUL-AUTHORING.md    ← come si scrive un'anima
+│   └── <persona>/               ← una cartella per persona, non per ruolo
+│       ├── SOUL.md              ← come pensa (scritta al primo avvio se manca)
+│       ├── IDENTITY.md          ← confini di accesso, generato dai dati
+│       ├── HEARTBEAT.md         ← a che punto è
+│       ├── ROLE-BRIEF.md        ← i dati del suo ruolo
+│       └── <LOG>.md             ← log di ruolo, se previsto
+├── catalog/
+│   ├── roles.json               ← le 36 figure disponibili
+│   └── templates/               ← template di heartbeat e log
 └── shared-context/
+    ├── TEAM.json                ← chi c'è: la sorgente di verità
     ├── THESIS.md                ← cosa crediamo
     ├── ROADMAP.md               ← dove stiamo andando
     ├── BRAND-GUIDE.md           ← come suoniamo
     └── MSG-LOG.jsonl            ← archivio completo messaggi inter-agente
 ```
 
-**Incluso in questo repo (non necessario nel tuo progetto):**
+`CLAUDE.md`, `AGENTS.md` e `GEMINI.md` vengono generati dal wizard a partire dal tuo team, quindi elencano le persone che hai scelto davvero.
+
+**Incluso in questo repo (non copiato nei progetti):**
 
 ```
 the-office/
-├── setup.sh                     ← installa il sistema in un nuovo progetto
-├── AGENTS.md                    ← config per Cursor, Copilot, Windsurf, ecc.
-├── GEMINI.md                    ← config per Gemini CLI
+├── setup.sh                     ← il wizard
+├── catalog/souls/               ← le sei anime scritte a mano
+├── tests/                       ← suite bats
 └── examples/
-    ├── product/sample-prd.md
-    ├── marketing/sample-content-calendar.md
-    └── engineering/sample-build-log.md
 ```
 
 ## Slash Commands
