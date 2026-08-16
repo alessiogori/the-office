@@ -12,7 +12,7 @@ Un sistema multi-agente in cui componi il team che ti serve, da un catalogo di 3
 | [Architettura](architettura.md) | Devi modificare il sistema, non solo usarlo |
 | [Le anime](anime.md) | Vuoi capire o scrivere un `SOUL.md` |
 | [Estendere il catalogo](estendere-il-catalogo.md) | Ti serve una figura che non c'è |
-| [Testing](testing.md) | Stai contribuendo al codice |
+| [Testing](testing.md) | Stai contribuendo al codice: 134 test, 45 secondi |
 
 ## In due minuti
 

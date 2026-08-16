@@ -605,7 +605,7 @@ while [ "$i" -lt "$COUNT" ]; do
   ID=$(roster_id_from_name "$NAME")
   COLOR=$(roster_next_color "$TARGET_DIR/shared-context/TEAM.json")
 
-  roster_generate_person "$SLUG" "$NAME" "$ID" "$TARGET_DIR/agents" "$TARGET_DIR/shared-context/TEAM.json"
+  roster_generate_person "$SLUG" "$NAME" "$ID" "$TARGET_DIR/agents"
 
   LABEL=$(roster_role_get "$SLUG" label)
   LOG=$(roster_role_get "$SLUG" log)

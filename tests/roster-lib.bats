@@ -60,7 +60,7 @@ teardown() { teardown_office_test; }
 }
 
 @test "roster_generate_person crea i file attesi" {
-  roster_generate_person backend "Marco" marco "$DEST" "$EMPTY_TEAM"
+  roster_generate_person backend "Marco" marco "$DEST"
   [ -f "$DEST/marco/IDENTITY.md" ]
   [ -f "$DEST/marco/HEARTBEAT.md" ]
   [ -f "$DEST/marco/ROLE-BRIEF.md" ]
@@ -68,12 +68,12 @@ teardown() { teardown_office_test; }
 }
 
 @test "roster_generate_person non crea SOUL.md per un ruolo senza anima nel catalogo" {
-  roster_generate_person backend "Marco" marco "$DEST" "$EMPTY_TEAM"
+  roster_generate_person backend "Marco" marco "$DEST"
   [ ! -f "$DEST/marco/SOUL.md" ]
 }
 
 @test "roster_generate_person copia SOUL.md per un ruolo storico" {
-  roster_generate_person tester "Marwen" marwen "$DEST" "$EMPTY_TEAM"
+  roster_generate_person tester "Marwen" marwen "$DEST"
   [ -f "$DEST/marwen/SOUL.md" ]
   run grep -q "Marwen" "$DEST/marwen/SOUL.md"
   assert_success
@@ -82,7 +82,7 @@ teardown() { teardown_office_test; }
 }
 
 @test "roster_generate_person sostituisce anche l'id nell'anima" {
-  roster_generate_person tester "Chiara" chiara "$DEST" "$EMPTY_TEAM"
+  roster_generate_person tester "Chiara" chiara "$DEST"
   run grep -q "__AGENT_ID__" "$DEST/chiara/SOUL.md"
   assert_failure
   run grep -q "msg.sh chiara" "$DEST/chiara/SOUL.md"
@@ -90,14 +90,14 @@ teardown() { teardown_office_test; }
 }
 
 @test "roster_generate_person non crea un log per un ruolo senza log" {
-  roster_generate_person ceo "Alessio" alessio "$DEST" "$EMPTY_TEAM"
+  roster_generate_person ceo "Alessio" alessio "$DEST"
   [ -f "$DEST/alessio/IDENTITY.md" ]
   run bash -c "ls '$DEST/alessio/' | grep -i 'log'"
   assert_failure
 }
 
 @test "IDENTITY.md contiene i confini e l'attrito del ruolo" {
-  roster_generate_person backend "Marco" marco "$DEST" "$EMPTY_TEAM"
+  roster_generate_person backend "Marco" marco "$DEST"
   run grep -q "Marco" "$DEST/marco/IDENTITY.md"
   assert_success
   run grep -qi "non può" "$DEST/marco/IDENTITY.md"
@@ -107,7 +107,7 @@ teardown() { teardown_office_test; }
 }
 
 @test "IDENTITY.md compila i comandi msg.sh con l'id della persona" {
-  roster_generate_person backend "Marco" marco "$DEST" "$EMPTY_TEAM"
+  roster_generate_person backend "Marco" marco "$DEST"
   run grep -q "msg.sh marco" "$DEST/marco/IDENTITY.md"
   assert_success
 }

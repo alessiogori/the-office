@@ -168,8 +168,10 @@ Solo macOS con iTerm2.
 
 ```bash
 git submodule update --init --recursive   # una volta
-./tests/run.sh                            # tutto
+./tests/run.sh                            # tutto: 134 test, ~45 secondi
 ./tests/run.sh tests/team-lib.bats        # un file
+
+OFFICE_TUI_TESTS=1 ./tests/run.sh tests/tui-interactive.bats   # le schermate gum
 ```
 
 Vedi [Testing](testing.md).

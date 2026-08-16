@@ -58,9 +58,10 @@ La caricano solo `setup.sh` e `hire.sh`. Conosce il catalogo e sa costruire una 
 | `roster_coordinator_slugs` | Solo i ruoli di coordinamento |
 | `roster_role_get <slug> <campo>` | Un campo del ruolo; le liste una voce per riga |
 | `roster_choices` | Righe `Categoria · Label<TAB>slug` per `gum filter` |
-| `roster_id_from_name <nome>` | Normalizzazione: `Niccolò` → `niccolo` |
+| `roster_id_from_name <nome>` | Id di una persona: `Niccolò` → `niccolo` |
+| `roster_slugify <testo>` | Come sopra ma conserva i trattini: `acme-shop` resta tale |
 | `roster_next_color <team.json>` | Un colore non ancora usato dal team |
-| `roster_generate_person <slug> <nome> <id> <dir> <team.json>` | Crea la cartella con i suoi file |
+| `roster_generate_person <slug> <nome> <id> <dir>` | Crea la cartella persona con tutti i suoi file, in un solo processo python |
 
 ### `agents/lib/tui.sh` — le schermate
 

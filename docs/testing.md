@@ -10,7 +10,7 @@ git submodule update --init --recursive   # una volta, se hai clonato senza
 ./tests/run.sh tests/team-lib.bats        # un file solo
 ```
 
-La suite completa impiega qualche minuto: `setup-wizard.bats` genera progetti veri, uno per test.
+La suite completa impiega circa 45 secondi.
 
 ## Com'è organizzata
 
@@ -26,6 +26,18 @@ La suite completa impiega qualche minuto: `setup-wizard.bats` genera progetti ve
 | `setup-wizard.bats` | Generazione end-to-end via `--config` |
 | `tui-interactive.bats` | Il wizard vero, pilotato via pty. Opt-in, vedi sotto |
 | `hire.bats` | Aggiunta di una persona, rollback incluso |
+
+## Perché è veloce
+
+Due scelte, entrambe misurate. La suite è passata da 196 a 45 secondi senza togliere un solo test.
+
+**Le fixture condivise.** `setup-wizard.bats` ha 29 test, e la maggior parte si limita a ispezionare un progetto generato. Generarne uno per test costava 145 secondi. `setup_file()` ne produce due una volta sola — un'installazione diretta e un export — e i test di sola lettura li riusano attraverso `$T` e `$B`. Solo chi muta lo stato o usa una configurazione diversa genera il proprio, e nel file è marcato con `# genera il proprio`.
+
+**Un processo python invece di quindici.** `roster_generate_person` chiamava `roster_role_get` quattordici volte, e ognuna riapriva e riparsava il catalogo da 36 ruoli: su un team di cinque persone erano settanta letture dello stesso file. Ora è un blocco python unico che legge il catalogo una volta e scrive tutti i file della persona. Una generazione è passata da 7,4 a 2,0 secondi.
+
+Nella stessa direzione, `team_require_manifest` verifica il manifest una volta per processo invece che a ogni `team_get`.
+
+Se aggiungi test a `setup-wizard.bats`, chiediti se ti serve davvero un progetto nuovo. Quasi sempre no.
 
 ## L'isolamento
 

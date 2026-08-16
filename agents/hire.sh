@@ -85,7 +85,7 @@ ROLLBACK
 trap 'rollback' EXIT
 
 # ── 1. Cartella persona ───────────────────────────────────────────────────────
-if ! roster_generate_person "$SLUG" "$NAME" "$ID" "$AGENTS_DIR" "$TEAM_JSON"; then
+if ! roster_generate_person "$SLUG" "$NAME" "$ID" "$AGENTS_DIR"; then
   echo "Errore: generazione della cartella fallita." >&2
   exit 1
 fi
