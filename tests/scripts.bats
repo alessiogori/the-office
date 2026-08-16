@@ -81,3 +81,51 @@ teardown() { teardown_office_test; }
   [ "$status" -eq 2 ]
   refute_output --partial "Traceback"
 }
+
+@test "launch costruisce il prompt dalla cartella del manifest" {
+  run "$OFFICE_ROOT/agents/launch.sh" --dry-run stefano
+  assert_success
+  assert_output --partial "Stefano"
+  assert_output --partial "agents/stefano/SOUL.md"
+  assert_output --partial "agents/stefano/IDENTITY.md"
+}
+
+@test "launch rifiuta un agente fuori dal manifest" {
+  run "$OFFICE_ROOT/agents/launch.sh" --dry-run pippo
+  assert_failure
+  assert_output --partial "pippo"
+}
+
+@test "launch senza argomenti elenca gli agenti del team" {
+  run "$OFFICE_ROOT/agents/launch.sh"
+  assert_output --partial "alessio"
+  assert_output --partial "stefano"
+  assert_output --partial "marwen"
+}
+
+@test "iterm usa il colore del manifest" {
+  run "$OFFICE_ROOT/agents/iterm.sh" --dry-run stefano
+  assert_success
+  assert_output --partial "4a90e2"
+}
+
+@test "iterm --dry-run all elenca una riga per agente" {
+  run bash -c "'$OFFICE_ROOT/agents/iterm.sh' --dry-run all | grep -c 'agents/'"
+  assert_output "3"
+}
+
+@test "dashboard elenca gli agenti del manifest" {
+  "$OFFICE_ROOT/agents/setstatus.sh" stefano WORKING "Fix BUG-001"
+  run "$OFFICE_ROOT/agents/dashboard.sh"
+  assert_success
+  assert_output --partial "Stefano"
+  assert_output --partial "Fix BUG-001"
+}
+
+@test "dashboard non mostra agenti che non sono nel manifest" {
+  use_manifest team-duplicates.json
+  "$OFFICE_ROOT/agents/setstatus.sh" marco IDLE
+  run "$OFFICE_ROOT/agents/dashboard.sh"
+  refute_output --partial "Stefano"
+  assert_output --partial "Marco"
+}

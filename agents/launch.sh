@@ -1,41 +1,46 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 # The Office — Launch agent
-# Uso: ./agents/launch.sh <agente>
+# Uso: ./agents/launch.sh [--dry-run] <agente>
 # Esempio: ./agents/launch.sh stefano
 
-PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$PROJECT_DIR"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/team.sh"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-WAIT_MSG="Poi rispondi con un unico messaggio di ready (es: '[Nome] pronto. In attesa del via.') e NON fare null'altro: nessuna analisi, nessun file aggiuntivo, nessuna proposta. Aspetta il primo comando esplicito."
+DRY_RUN=""
+if [ "${1:-}" = "--dry-run" ]; then
+  DRY_RUN=1
+  shift
+fi
 
-case "$1" in
-  alessio|ceo)
-    claude "Sei Alessio, il CEO. Leggi agents/ceo/SOUL.md e agents/ceo/IDENTITY.md. $WAIT_MSG"
-    ;;
-  stefano|engineer)
-    claude "Sei Stefano, l'Engineer. Leggi agents/engineer/SOUL.md e agents/engineer/IDENTITY.md. $WAIT_MSG"
-    ;;
-  walter|product)
-    claude "Sei Walter, il Product Lead. Leggi agents/product/SOUL.md e agents/product/IDENTITY.md. $WAIT_MSG"
-    ;;
-  veronica|marketing)
-    claude "Sei Veronica, la responsabile Marketing. Leggi agents/marketing/SOUL.md e agents/marketing/IDENTITY.md. $WAIT_MSG"
-    ;;
-  alessandra|uiux)
-    claude "Sei Alessandra, la UI/UX Specialist. Leggi agents/uiux/SOUL.md e agents/uiux/IDENTITY.md. $WAIT_MSG"
-    ;;
-  marwen|tester)
-    claude "Sei Marwen, il Tester. Leggi agents/tester/SOUL.md e agents/tester/IDENTITY.md. $WAIT_MSG"
-    ;;
-  *)
-    echo "Agenti disponibili:"
-    echo "  alessio    (CEO)"
-    echo "  stefano    (Engineer)"
-    echo "  walter     (Product)"
-    echo "  veronica   (Marketing)"
-    echo "  alessandra (UI/UX)"
-    echo "  marwen     (Tester)"
-    echo ""
-    echo "Uso: ./agents/launch.sh <nome>"
-    ;;
-esac
+AGENT=$(echo "${1:-}" | tr '[:upper:]' '[:lower:]')
+
+if [ -z "$AGENT" ]; then
+  echo "Agenti disponibili:"
+  team_ids | while read -r id; do
+    printf "  %-12s (%s)\n" "$id" "$(team_get "$id" label)"
+  done
+  echo ""
+  echo "Uso: ./agents/launch.sh <agente>"
+  exit 0
+fi
+
+team_validate "$AGENT" || exit 1
+
+NAME=$(team_get "$AGENT" name)
+LABEL=$(team_get "$AGENT" label)
+FOLDER=$(team_get "$AGENT" folder)
+
+WAIT_MSG="Poi rispondi con un unico messaggio di ready (es: '$NAME pronto. In attesa del via.') e NON fare nient'altro: nessuna analisi, nessun file aggiuntivo, nessuna proposta. Aspetta il primo comando esplicito."
+
+SOUL_MSG="Se $FOLDER/SOUL.md non esiste, scrivilo prima seguendo agents/_authoring/SOUL-AUTHORING.md e $FOLDER/ROLE-BRIEF.md, poi dichiara che l'hai appena forgiato."
+
+PROMPT="Sei $NAME, $LABEL. Leggi $FOLDER/SOUL.md e $FOLDER/IDENTITY.md. $SOUL_MSG $WAIT_MSG"
+
+if [ -n "$DRY_RUN" ]; then
+  echo "$PROMPT"
+  exit 0
+fi
+
+cd "$PROJECT_DIR" || exit 1
+claude "$PROMPT"

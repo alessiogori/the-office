@@ -6,8 +6,14 @@
 # Ctrl+C per uscire (ripristina il terminale automaticamente)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-STATUS_FILE="$SCRIPT_DIR/../shared-context/AGENT-STATUS.json"
-QUEUES_DIR="$SCRIPT_DIR/../shared-context/queues"
+source "$SCRIPT_DIR/lib/team.sh"
+
+team_require_manifest
+
+SHARED_DIR="${OFFICE_SHARED_DIR:-$SCRIPT_DIR/../shared-context}"
+MANIFEST="$(team_manifest_path)"
+STATUS_FILE="$SHARED_DIR/AGENT-STATUS.json"
+QUEUES_DIR="$SHARED_DIR/queues"
 REFRESH="${REFRESH:-5}"
 
 SPIN=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
@@ -36,6 +42,7 @@ while true; do
 import json, os
 from datetime import datetime
 
+MANIFEST    = "$MANIFEST"
 STATUS_FILE = "$STATUS_FILE"
 QUEUES_DIR  = "$QUEUES_DIR"
 SC          = "$SC"
@@ -55,14 +62,9 @@ DW  = "\033[2;37m"   # dim white    — ruoli / task
 STATUS_COLOR = {"WORKING": BG, "IDLE": YL, "STANDBY": GR}
 STATUS_ICON  = {"WORKING": "● WORKING", "IDLE": "○ IDLE   ", "STANDBY": "◌ STANDBY"}
 
-AGENTS = [
-    ("alessio",    "Alessio",    "CEO "),
-    ("stefano",    "Stefano",    "Eng "),
-    ("walter",     "Walter",     "Prod"),
-    ("veronica",   "Veronica",   "Mkt "),
-    ("alessandra", "Alessandra", "UX  "),
-    ("marwen",     "Marwen",     "QA  "),
-]
+# Il team viene dal manifest: e' l'unica sorgente di verita'.
+AGENTS = [(m["id"], m["name"], m["role"][:4].ljust(4))
+          for m in json.load(open(MANIFEST))["team"]]
 
 # ── Dati ──────────────────────────────────────────────────────────────────────
 try:
