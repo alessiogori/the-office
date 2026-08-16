@@ -244,9 +244,11 @@ the-office/
 | Comando | Cosa fa |
 |---------|---------|
 | `/startup` | Scegli il tuo ruolo e carica il contesto |
+| `/ceo` | Passa all'agente Alessio |
 | `/engineer` | Passa all'agente Stefano |
 | `/product` | Passa all'agente Walter |
 | `/marketing` | Passa all'agente Veronica |
+| `/uiux` | Passa all'agente Alessandra |
 | `/tester-agent` | Passa all'agente Marwen |
 | `/session` | Aggiorna la tua sezione nel file di sessione condiviso |
 | `/wrap-up` | Riepilogo di fine giornata cross-agente |
