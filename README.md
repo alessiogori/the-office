@@ -225,7 +225,9 @@ tuo-progetto/
 ```
 the-office/
 ├── setup.sh                     ← il wizard
+├── .claude/commands/            ← slash command, legati al team di questo repo
 ├── catalog/souls/               ← le sei anime scritte a mano
+├── exports/                     ← i bundle generati (gitignored)
 ├── tests/                       ← suite bats
 └── examples/
 ```

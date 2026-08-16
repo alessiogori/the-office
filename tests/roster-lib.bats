@@ -120,3 +120,20 @@ teardown() { teardown_office_test; }
   refute_output "#4a90e2"
   refute_output "#2ecc71"
 }
+
+@test "roster_slugify mantiene i trattini a differenza di roster_id_from_name" {
+  run roster_slugify "acme-shop"
+  assert_output "acme-shop"
+  run roster_id_from_name "acme-shop"
+  assert_output "acmeshop"
+}
+
+@test "roster_slugify normalizza spazi e accenti" {
+  run roster_slugify "Progetto Città 2026"
+  assert_output "progetto-citta-2026"
+}
+
+@test "roster_slugify collassa separatori ripetuti e ripulisce i bordi" {
+  run roster_slugify "  --Acme__Shop--  "
+  assert_output "acme-shop"
+}

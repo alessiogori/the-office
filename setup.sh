@@ -12,20 +12,49 @@ source "$SCRIPT_DIR/agents/lib/roster.sh"
 source "$SCRIPT_DIR/agents/lib/tui.sh"
 
 CONFIG_FILE=""
+WIZARD_TMP_CONFIG=""
 TARGET_DIR=""
 SAVE_CONFIG=""
+EXPORT_ROOT="$SCRIPT_DIR/exports"
+FORCE=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --config)      CONFIG_FILE="${2:-}"; shift 2 ;;
     --target)      TARGET_DIR="${2:-}"; shift 2 ;;
+    --export-dir)  EXPORT_ROOT="${2:-}"; shift 2 ;;
     --save-config) SAVE_CONFIG="${2:-}"; shift 2 ;;
+    --force)       FORCE=1; shift ;;
     -h|--help)
-      echo "Uso: ./setup.sh [--config <file>] [--target <dir>] [--save-config <file>]"
+      cat <<'USAGE'
+Uso: ./setup.sh [opzioni]
+
+Senza opzioni: wizard interattivo. Il team viene esportato come bundle
+autonomo in exports/<nome-progetto>/, pronto da copiare in un progetto
+esistente. Nessun progetto viene toccato.
+
+  --config <file>       Legge il team da un JSON invece di chiederlo
+  --target <dir>        Installa direttamente in <dir> invece di esportare
+  --export-dir <dir>    Radice degli export (default: ./exports)
+  --save-config <file>  Salva la configurazione usata
+  --force               Consente di scrivere in una --target non vuota
+USAGE
       exit 0 ;;
     *) echo "Opzione sconosciuta: $1" >&2; exit 2 ;;
   esac
 done
+
+dir_non_vuota() {
+  [ -d "$1" ] && [ -n "$(ls -A "$1" 2>/dev/null)" ]
+}
+
+# Il config temporaneo del wizard contiene i dati del progetto: non va lasciato
+# in giro in $TMPDIR.
+cleanup_tmp() {
+  [ -n "$WIZARD_TMP_CONFIG" ] && rm -f "$WIZARD_TMP_CONFIG"
+  return 0
+}
+trap cleanup_tmp EXIT
 
 # ── Validazione della configurazione ──────────────────────────────────────────
 # Team non vuoto, prima persona coordinatrice, ruoli esistenti, id univoci.
@@ -201,6 +230,101 @@ $roster
 GEMINIEOF
 }
 
+# ── INTEGRAZIONE.md — come innestare il bundle in un progetto esistente ──────
+generate_integration_guide() {
+  local target="$1"
+  local roster people
+  roster="$(_team_roster_markdown "$target/shared-context/TEAM.json")"
+  people=$(python3 -c "
+import json,sys
+t=json.load(open(sys.argv[1]))['team']
+print(', '.join(f\"{m['name']} ({m['label']})\" for m in t))
+" "$target/shared-context/TEAM.json")
+
+  cat > "$target/INTEGRAZIONE.md" <<INTEGEOF
+# Integrare questo team in $PROJECT_NAME
+
+Bundle autonomo generato da the-office. Contiene tutto quello che serve: non
+dipende dal repo che lo ha prodotto.
+
+**Team:** $people
+
+## Se il progetto è nuovo o non ha un CLAUDE.md
+
+Copia tutto e hai finito:
+
+\`\`\`bash
+cp -R . /percorso/del/progetto/
+cd /percorso/del/progetto
+./agents/dashboard.sh
+\`\`\`
+
+## Se il progetto ha già un CLAUDE.md
+
+Copia tutto **tranne** i tre file di configurazione, poi innesta la sezione
+agenti in quello che hai già:
+
+\`\`\`bash
+PROG=/percorso/del/progetto
+
+cp -R agents catalog shared-context "\$PROG/"
+mkdir -p "\$PROG/docs/sessions"
+
+# Appendi la sezione agenti al tuo CLAUDE.md invece di sostituirlo
+sed -n '/^## Sistema multi-agente/,\$p' CLAUDE.md >> "\$PROG/CLAUDE.md"
+\`\`\`
+
+Fai lo stesso con \`AGENTS.md\` e \`GEMINI.md\` se il progetto li usa.
+
+**Attenzione a \`shared-context/\`:** contiene \`THESIS.md\`, \`ROADMAP.md\` e
+\`BRAND-GUIDE.md\` con contenuti segnaposto. Se il progetto ha già una sua
+visione o una sua guida di stile, non sovrascriverli: copia solo
+\`TEAM.json\`, \`inbox/\` e \`queues/\`.
+
+\`\`\`bash
+cp shared-context/TEAM.json "\$PROG/shared-context/"
+cp -R shared-context/inbox shared-context/queues "\$PROG/shared-context/"
+\`\`\`
+
+## Cosa stai copiando
+
+| Percorso | Cosa contiene |
+|----------|---------------|
+| \`agents/<persona>/\` | Una cartella per persona: identità, heartbeat, brief, log |
+| \`agents/lib/\` | Le librerie che leggono il team a runtime |
+| \`agents/*.sh\` | msg, ack, setstatus, qtask, hire, dashboard, launch, iterm |
+| \`agents/_authoring/\` | Le regole per scrivere un SOUL.md |
+| \`catalog/roles.json\` | Le figure disponibili, per assumere in futuro |
+| \`shared-context/TEAM.json\` | Chi c'è nel team: la sorgente di verità |
+| \`CLAUDE.md\`, \`AGENTS.md\`, \`GEMINI.md\` | Istruzioni per i vari AI tool |
+
+## Il team
+
+$roster
+
+## Dopo l'integrazione
+
+\`\`\`bash
+./agents/dashboard.sh      # verifica che il team sia visto
+./agents/iterm.sh all      # una finestra per persona (macOS + iTerm2)
+./agents/hire.sh           # aggiungi qualcuno
+\`\`\`
+
+Al primo avvio, ogni agente il cui \`SOUL.md\` non esiste se lo scrive da solo,
+leggendo il proprio \`ROLE-BRIEF.md\` e il contesto del progetto. È voluto:
+l'anima nasce calata su **questo** progetto invece che generica.
+
+## Requisiti
+
+\`bash\` 3.2+ e \`python3\`. Niente altro. \`iTerm2\` serve solo per la consegna
+dei messaggi in finestra; senza, i messaggi restano comunque su log e inbox.
+
+## Questo file
+
+Puoi cancellarlo dopo l'integrazione: serve solo al trasporto.
+INTEGEOF
+}
+
 # ── Wizard interattivo ────────────────────────────────────────────────────────
 # Raccoglie le scelte con gum e le scrive in un file di config temporaneo,
 # assegnandolo a CONFIG_FILE: da lì in poi il percorso è identico a --config.
@@ -210,12 +334,21 @@ wizard_collect_interactive() {
   gum style --border rounded --padding "1 3" --margin "1 0" \
     "the-office — composizione del team"
 
-  local target name desc stack brand size
-  target=$(gum input --placeholder "/Users/me/Code/mio-progetto" --header "Directory di destinazione")
-  [ -n "$target" ] || { echo "Directory obbligatoria." >&2; exit 2; }
-  TARGET_DIR="$target"
-
-  name=$(gum input --value "my-project" --header "Nome del progetto")
+  local name desc stack brand size slug
+  while true; do
+    name=$(gum input --value "my-project" --header "Nome del progetto")
+    [ -n "$name" ] || { echo "Nome obbligatorio." >&2; exit 2; }
+    slug=$(roster_slugify "$name")
+    if [ -z "$slug" ]; then
+      gum style --foreground 196 "Da '$name' non ricavo un nome di cartella. Usa lettere o numeri."
+      continue
+    fi
+    if dir_non_vuota "$EXPORT_ROOT/$slug"; then
+      gum style --foreground 196 "Esiste già un export in $EXPORT_ROOT/$slug. Scegli un altro nome o rimuovilo."
+      continue
+    fi
+    break
+  done
   desc=$(gum input --placeholder "Cosa fa questo progetto" --header "Descrizione breve")
   stack=$(gum input --placeholder "Laravel, Vue, MySQL" --header "Tech stack")
   brand=$(gum input --value "$name" --header "Nome brand")
@@ -231,6 +364,7 @@ wizard_collect_interactive() {
   done
 
   CONFIG_FILE="$(mktemp)"
+  WIZARD_TMP_CONFIG="$CONFIG_FILE"
   local roles_file names_file
   roles_file="$(mktemp)"
   names_file="$(mktemp)"
@@ -242,6 +376,11 @@ wizard_collect_interactive() {
   suggested=$(tui_suggest_name 0)
   person_name=$(tui_ask_name "$suggested")
   [ -n "$person_name" ] || { echo "Nome obbligatorio." >&2; exit 2; }
+  while [ -z "$(roster_id_from_name "$person_name")" ]; do
+    gum style --foreground 196 "Da '$person_name' non ricavo un id. Usa lettere o numeri."
+    person_name=$(tui_ask_name "$suggested")
+    [ -n "$person_name" ] || { echo "Nome obbligatorio." >&2; exit 2; }
+  done
   echo "$slug"        >> "$roles_file"
   echo "$person_name" >> "$names_file"
 
@@ -256,6 +395,10 @@ wizard_collect_interactive() {
     [ -n "$person_name" ] || { echo "Nome obbligatorio." >&2; exit 2; }
 
     new_id=$(roster_id_from_name "$person_name")
+    if [ -z "$new_id" ]; then
+      gum style --foreground 196 "Da '$person_name' non ricavo un id. Usa lettere o numeri."
+      continue
+    fi
     dup=0
     while read -r existing; do
       existing_id=$(roster_id_from_name "$existing")
@@ -271,14 +414,13 @@ wizard_collect_interactive() {
     i=$((i + 1))
   done
 
-  python3 - "$CONFIG_FILE" "$name" "$desc" "$stack" "$brand" "$target" "$roles_file" "$names_file" <<'PY'
+  python3 - "$CONFIG_FILE" "$name" "$desc" "$stack" "$brand" "$roles_file" "$names_file" <<'PY'
 import json, sys
-out, name, desc, stack, brand, target, roles_f, names_f = sys.argv[1:9]
+out, name, desc, stack, brand, roles_f, names_f = sys.argv[1:8]
 roles = [l.strip() for l in open(roles_f) if l.strip()]
 names = [l.strip() for l in open(names_f) if l.strip()]
 json.dump({
-    "project": {"name": name, "description": desc, "stack": stack,
-                "brand": brand, "target": target},
+    "project": {"name": name, "description": desc, "stack": stack, "brand": brand},
     "team": [{"role": r, "name": n} for r, n in zip(roles, names)],
 }, open(out, "w"), indent=2, ensure_ascii=False)
 PY
@@ -294,7 +436,7 @@ for m in json.load(open(sys.argv[1]))["team"]:
     print(f"  {m['name']:<14} {m['role']}")
 PY
   echo ""
-  gum confirm "Genero il progetto in $TARGET_DIR?" || { echo "Setup annullato."; exit 0; }
+  gum confirm "Esporto il bundle in $EXPORT_ROOT/$slug?" || { echo "Setup annullato."; exit 0; }
 
   validate_config "$CONFIG_FILE"
 }
@@ -307,16 +449,56 @@ else
   wizard_collect_interactive
 fi
 
-if [ -z "$TARGET_DIR" ]; then
-  TARGET_DIR=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project'].get('target',''))" "$CONFIG_FILE")
-fi
-[ -n "$TARGET_DIR" ] || { echo "Errore: directory di destinazione non specificata (--target)." >&2; exit 2; }
-TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
-
 PROJECT_NAME=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project']['name'])" "$CONFIG_FILE")
 PROJECT_DESC=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project']['description'])" "$CONFIG_FILE")
 TECH_STACK=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project']['stack'])" "$CONFIG_FILE")
 BRAND_NAME=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project']['brand'])" "$CONFIG_FILE")
+
+# ── Destinazione: export (default) o installazione diretta ────────────────────
+if [ -z "$TARGET_DIR" ]; then
+  TARGET_DIR=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project'].get('target',''))" "$CONFIG_FILE")
+fi
+
+if [ -n "$TARGET_DIR" ]; then
+  # Installazione diretta: la destinazione può essere un progetto vivo.
+  EXPORT_MODE=""
+  TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
+
+  if dir_non_vuota "$TARGET_DIR"; then
+    echo "" >&2
+    echo "Attenzione: $TARGET_DIR esiste ed è non vuota." >&2
+    echo "Il setup sovrascrive CLAUDE.md, AGENTS.md, GEMINI.md, .gitignore e i file" >&2
+    echo "di shared-context/ senza fonderli con quelli esistenti." >&2
+
+    if [ -n "$FORCE" ]; then
+      echo "Procedo comunque (--force)." >&2
+    elif [ -t 0 ] && [ -z "$CONFIG_FILE" ]; then
+      printf "Continuare? [s/N]: " >&2
+      read -r conferma
+      if [ "$(echo "$conferma" | tr '[:upper:]' '[:lower:]')" != "s" ]; then
+        echo "Setup annullato." >&2
+        exit 0
+      fi
+    else
+      echo "" >&2
+      echo "Rilancia con --force se è quello che vuoi, oppure ometti --target per" >&2
+      echo "generare un bundle in exports/ e innestarlo a mano." >&2
+      exit 2
+    fi
+  fi
+else
+  # Export: destinazione sempre nuova, nessun progetto esistente coinvolto.
+  EXPORT_MODE=1
+  PROJECT_SLUG=$(roster_slugify "$PROJECT_NAME")
+  [ -n "$PROJECT_SLUG" ] || { echo "Errore: il nome progetto '$PROJECT_NAME' non produce uno slug valido." >&2; exit 2; }
+  TARGET_DIR="$EXPORT_ROOT/$PROJECT_SLUG"
+
+  if dir_non_vuota "$TARGET_DIR"; then
+    echo "Errore: l'export '$TARGET_DIR' esiste già e non è vuoto." >&2
+    echo "Un bundle non viene sovrascritto: rimuovilo, oppure usa un nome progetto diverso." >&2
+    exit 2
+  fi
+fi
 
 # ── Struttura ─────────────────────────────────────────────────────────────────
 mkdir -p "$TARGET_DIR/agents/lib" "$TARGET_DIR/agents/_authoring" \
@@ -407,6 +589,12 @@ EOF
 
 
 # ── Persone e manifest ────────────────────────────────────────────────────────
+if [ -s "$TARGET_DIR/shared-context/TEAM.json" ] && [ -z "$FORCE" ]; then
+  echo "Errore: $TARGET_DIR/shared-context/TEAM.json esiste già." >&2
+  echo "Rigenerare azzererebbe il team, lasciando orfane le cartelle degli agenti." >&2
+  echo "Per aggiungere una persona usa ./agents/hire.sh; per rifare tutto usa --force." >&2
+  exit 2
+fi
 echo '{"version":1,"team":[]}' > "$TARGET_DIR/shared-context/TEAM.json"
 
 COUNT=$(python3 -c "import json,sys; print(len(json.load(open(sys.argv[1]))['team']))" "$CONFIG_FILE")
@@ -455,6 +643,7 @@ done
 cp "$SCRIPT_DIR/agents/lib/team.sh"   "$TARGET_DIR/agents/lib/team.sh"
 cp "$SCRIPT_DIR/agents/lib/roster.sh" "$TARGET_DIR/agents/lib/roster.sh"
 cp "$SCRIPT_DIR/agents/lib/tui.sh"    "$TARGET_DIR/agents/lib/tui.sh"
+rm -rf "$TARGET_DIR/catalog/templates"
 cp -R "$SCRIPT_DIR/catalog/templates" "$TARGET_DIR/catalog/templates"
 cp "$SCRIPT_DIR/catalog/roles.json"   "$TARGET_DIR/catalog/roles.json"
 cp "$SCRIPT_DIR/catalog/SOUL-AUTHORING.md" "$TARGET_DIR/agents/_authoring/SOUL-AUTHORING.md"
@@ -477,11 +666,25 @@ if [ -n "$SAVE_CONFIG" ]; then
   echo "✓ Configurazione salvata in $SAVE_CONFIG"
 fi
 
-echo ""
-echo "  Progetto generato in $TARGET_DIR"
-echo ""
-echo "  Prossimi passi:"
-echo "    cd $TARGET_DIR"
-echo "    ./agents/dashboard.sh          # chi c'è nel team"
-echo "    ./agents/iterm.sh all          # apri un terminale per ciascuno"
-echo ""
+if [ -n "$EXPORT_MODE" ]; then
+  generate_integration_guide "$TARGET_DIR"
+  echo "✓ INTEGRAZIONE.md scritto."
+  echo ""
+  echo "  Bundle pronto in $TARGET_DIR"
+  echo ""
+  echo "  Per innestarlo in un progetto esistente:"
+  echo "    cat $TARGET_DIR/INTEGRAZIONE.md"
+  echo ""
+  echo "  In breve, se il progetto non ha già un CLAUDE.md:"
+  echo "    cp -R $TARGET_DIR/. /percorso/del/progetto/"
+  echo ""
+else
+  echo ""
+  echo "  Progetto generato in $TARGET_DIR"
+  echo ""
+  echo "  Prossimi passi:"
+  echo "    cd $TARGET_DIR"
+  echo "    ./agents/dashboard.sh          # chi c'è nel team"
+  echo "    ./agents/iterm.sh all          # apri un terminale per ciascuno"
+  echo ""
+fi

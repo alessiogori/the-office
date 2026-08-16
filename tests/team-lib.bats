@@ -107,3 +107,13 @@ teardown() { teardown_office_test; }
   run team_manifest_path
   assert_output "$OFFICE_SHARED_DIR/TEAM.json"
 }
+
+@test "team_validate confronta l'id letteralmente, non come regex" {
+  use_manifest team-valid.json
+  run team_validate "marwe."
+  assert_failure
+  run team_validate "s.efano"
+  assert_failure
+  run team_validate ".*"
+  assert_failure
+}

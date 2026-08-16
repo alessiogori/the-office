@@ -45,6 +45,16 @@ fi
 # ── Nome visualizzato dell'agente che fa ACK, dal manifest ───────────────────
 ACK_BY_NAME=$(team_get "$ACK_BY_RAW" name)
 
+# ── Solo il destinatario può confermare ──────────────────────────────────────
+# Un ACK da parte di un terzo lascerebbe il file nell'inbox del vero
+# destinatario e gli impedirebbe di confermare a sua volta.
+EXPECTED_TO=$(echo "$SENT_LINE" | grep -o '"to":"[^"]*"' | cut -d'"' -f4)
+if [ -n "$EXPECTED_TO" ] && [ "$EXPECTED_TO" != "$ACK_BY_NAME" ]; then
+  echo "Errore: '$MSG_ID' è indirizzato a $EXPECTED_TO, non a $ACK_BY_NAME." >&2
+  echo "Solo il destinatario può confermare un messaggio." >&2
+  exit 1
+fi
+
 # ── Estrai mittente originale dal log (per notifica di ritorno) ───────────────
 # Il JSON ha il campo "from", es: "from":"Stefano"
 FROM_NAME=$(echo "$SENT_LINE" | grep -o '"from":"[^"]*"' | cut -d'"' -f4)

@@ -40,6 +40,12 @@ open_window() {
   role=$(team_get "$agent" label)
   accent=$(team_get "$agent" color)
   accent="${accent#\#}"
+  # Un manifest scritto a mano può avere un colore mancante o troncato:
+  # meglio un grigio neutro che un errore aritmetico e un AppleScript rotto.
+  case "$accent" in
+    [0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]) ;;
+    *) accent="7f8c8d" ;;
+  esac
   bg=$(darken "$accent")
 
   if [ -n "$DRY_RUN" ]; then

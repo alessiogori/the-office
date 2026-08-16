@@ -69,7 +69,8 @@ team_validate() {
   local id="$1"
   team_require_manifest
 
-  if team_ids | grep -qx -- "$id"; then
+  # -F: un id come "marwe." non deve combaciare per via del punto.
+  if team_ids | grep -qxF -- "$id"; then
     return 0
   fi
 

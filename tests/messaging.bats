@@ -91,3 +91,39 @@ PY
   run grep -c '"type": *"SENT"' "$OFFICE_SHARED_DIR/MSG-LOG.jsonl"
   assert_output "1"
 }
+
+@test "due messaggi nello stesso secondo non collidono" {
+  "$OFFICE_ROOT/agents/msg.sh" stefano marwen "primo"
+  "$OFFICE_ROOT/agents/msg.sh" stefano marwen "secondo"
+  run bash -c "ls '$OFFICE_SHARED_DIR/inbox/marwen/' | wc -l | tr -d ' '"
+  assert_output "2"
+  run bash -c "python3 -c \"
+import json,sys
+ids=[json.loads(l)['id'] for l in open('$OFFICE_SHARED_DIR/MSG-LOG.jsonl') if json.loads(l)['type']=='SENT']
+print('unici' if len(set(ids))==len(ids) else 'collisi')\""
+  assert_output "unici"
+}
+
+@test "msg rifiuta un destinatario che assomiglia a una regex" {
+  run "$OFFICE_ROOT/agents/msg.sh" stefano "marwe." "test"
+  assert_failure
+  [ ! -d "$OFFICE_SHARED_DIR/inbox/marwe." ]
+}
+
+@test "ack rifiuta chi non è il destinatario del messaggio" {
+  "$OFFICE_ROOT/agents/msg.sh" stefano marwen "Fix pronto"
+  MSG_ID=$(first_sent_id)
+  run "$OFFICE_ROOT/agents/ack.sh" "$MSG_ID" alessio
+  assert_failure
+  assert_output --partial "Marwen"
+  run grep -c '"type": *"ACK"' "$OFFICE_SHARED_DIR/MSG-LOG.jsonl"
+  assert_output "0"
+}
+
+@test "dopo un ack rifiutato il destinatario può ancora confermare" {
+  "$OFFICE_ROOT/agents/msg.sh" stefano marwen "Fix pronto"
+  MSG_ID=$(first_sent_id)
+  "$OFFICE_ROOT/agents/ack.sh" "$MSG_ID" alessio || true
+  run "$OFFICE_ROOT/agents/ack.sh" "$MSG_ID" marwen
+  assert_success
+}

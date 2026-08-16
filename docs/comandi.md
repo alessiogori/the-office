@@ -5,17 +5,23 @@ Reference di tutti gli script. Gli id degli agenti vengono sempre da `shared-con
 ## setup.sh — comporre un team
 
 ```bash
-./setup.sh                                        # wizard interattivo
-./setup.sh --config <file> --target <dir>         # non interattivo
-./setup.sh --save-config <file>                   # esporta le scelte fatte
+./setup.sh                                        # wizard, esporta in exports/<slug>/
+./setup.sh --config <file>                        # non interattivo, esporta
+./setup.sh --config <file> --target <dir>         # installa direttamente
 ./setup.sh --help
 ```
+
+**Predefinito è l'export**: il team finisce in `exports/<slug-del-progetto>/` come bundle autonomo, e nessun progetto esistente viene toccato. `--target` installa direttamente, ed è la strada giusta solo su una directory vuota.
 
 | Opzione | Effetto |
 |---------|---------|
 | `--config <file>` | Legge il team da un JSON invece di chiederlo. Salta ogni schermata |
-| `--target <dir>` | Directory di destinazione. Se assente si usa `project.target` del config |
+| `--target <dir>` | Installa in `<dir>` invece di esportare. Anche `project.target` nel config |
+| `--export-dir <dir>` | Radice degli export. Default `./exports` |
 | `--save-config <file>` | Copia la configurazione usata, per rifare lo stesso setup altrove |
+| `--force` | Consente di scrivere in una `--target` non vuota, o di rigenerare un team esistente |
+
+Il bundle esportato contiene un `INTEGRAZIONE.md` con i comandi per innestarlo, compreso il caso in cui il progetto abbia già un `CLAUDE.md`.
 
 Formato del file di configurazione:
 
@@ -42,6 +48,8 @@ Regole validate prima di scrivere qualsiasi cosa. Ognuna esce con codice 2:
 - ogni `role` deve esistere nel catalogo
 - ogni persona deve avere un nome che produca un id valido
 - due persone non possono produrre lo stesso id
+- l'export di destinazione non deve esistere già (un bundle non si sovrascrive)
+- una `--target` non vuota richiede `--force`, o conferma esplicita in interattivo
 
 ## hire.sh — aggiungere una persona
 

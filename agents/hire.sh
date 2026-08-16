@@ -47,7 +47,7 @@ if [ -z "$ID" ]; then
   exit 2
 fi
 
-if team_ids | grep -qx -- "$ID"; then
+if team_ids | grep -qxF -- "$ID"; then
   echo "Errore: '$ID' è già nel team." >&2
   echo "Scegli un nome diverso: gli id devono essere univoci." >&2
   exit 2
@@ -57,10 +57,29 @@ fi
 PERSON_DIR="$AGENTS_DIR/$ID"
 CREATED_DIR=""
 
+MANIFEST_WRITTEN=""
+
 rollback() {
   [ -n "$CREATED_DIR" ] && [ -d "$CREATED_DIR" ] && rm -rf "$CREATED_DIR"
   rm -rf "$SHARED_DIR/inbox/$ID" 2>/dev/null
   rm -f "$SHARED_DIR/queues/$ID.json" 2>/dev/null
+
+  # La voce nel manifest va tolta, altrimenti resta un agente fantasma che
+  # punta a una cartella cancellata e che ogni script continua a vedere.
+  if [ -n "$MANIFEST_WRITTEN" ]; then
+    python3 - "$TEAM_JSON" "$ID" <<'ROLLBACK' 2>/dev/null
+import json, os, sys
+path, id_ = sys.argv[1], sys.argv[2]
+try:
+    data = json.load(open(path))
+except Exception:
+    sys.exit(0)
+data["team"] = [m for m in data.get("team", []) if m.get("id") != id_]
+tmp = path + ".tmp"
+json.dump(data, open(tmp, "w"), indent=2, ensure_ascii=False)
+os.replace(tmp, path)
+ROLLBACK
+  fi
   return 0
 }
 trap 'rollback' EXIT
@@ -94,6 +113,7 @@ then
   echo "Errore: scrittura di $TEAM_JSON fallita. Nessuna modifica applicata." >&2
   exit 1
 fi
+MANIFEST_WRITTEN=1
 
 # ── 3. Stato, inbox, coda ─────────────────────────────────────────────────────
 if ! mkdir -p "$SHARED_DIR/inbox/$ID" "$SHARED_DIR/queues" 2>/dev/null; then

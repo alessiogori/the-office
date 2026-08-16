@@ -102,6 +102,18 @@ print(re.sub(r"[^a-z0-9]", "", name.lower()))
 PY
 }
 
+# Come roster_id_from_name, ma tiene i trattini: per un nome di progetto
+# "acme-shop" deve restare "acme-shop", non diventare "acmeshop".
+roster_slugify() {
+  python3 - "$1" <<'PY'
+import sys, unicodedata, re
+name = unicodedata.normalize("NFKD", sys.argv[1])
+name = "".join(c for c in name if not unicodedata.combining(c))
+slug = re.sub(r"[^a-z0-9]+", "-", name.lower())
+print(slug.strip("-"))
+PY
+}
+
 # Palette per i nuovi assunti, in ordine di preferenza.
 ROSTER_PALETTE="#f5b400 #4a90e2 #9b59b6 #e74c3c #1abc9c #2ecc71 #e67e22 #3498db #8e44ad #16a085 #d35400 #27ae60"
 

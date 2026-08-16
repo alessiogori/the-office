@@ -170,3 +170,106 @@ JSON
   run python3 -c "import json,sys; print(len(json.load(open(sys.argv[1]))['team']))" "$OUT"
   assert_output "4"
 }
+
+# ── Modalità export ───────────────────────────────────────────────────────────
+
+@test "senza --target il wizard esporta in exports/<slug>" {
+  EXPORTS="$OFFICE_TEST_DIR/exports"
+  run "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --export-dir "$EXPORTS"
+  assert_success
+  [ -d "$EXPORTS/flow" ]
+  [ -f "$EXPORTS/flow/shared-context/TEAM.json" ]
+}
+
+@test "lo slug dell'export tiene i trattini del nome progetto" {
+  EXPORTS="$OFFICE_TEST_DIR/exports"
+  python3 - "$CONFIG" <<'PY'
+import json, sys
+c = json.load(open(sys.argv[1]))
+c["project"]["name"] = "Acme Shop 2026"
+json.dump(c, open(sys.argv[1], "w"))
+PY
+  "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --export-dir "$EXPORTS"
+  [ -d "$EXPORTS/acme-shop-2026" ]
+}
+
+@test "il bundle esportato è autonomo" {
+  EXPORTS="$OFFICE_TEST_DIR/exports"
+  "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --export-dir "$EXPORTS"
+  B="$EXPORTS/flow"
+  [ -x "$B/agents/setstatus.sh" ]
+  [ -x "$B/agents/hire.sh" ]
+  [ -f "$B/agents/lib/team.sh" ]
+  [ -f "$B/agents/lib/roster.sh" ]
+  [ -f "$B/catalog/roles.json" ]
+  [ -d "$B/catalog/templates" ]
+  [ -f "$B/agents/_authoring/SOUL-AUTHORING.md" ]
+  [ -f "$B/CLAUDE.md" ]
+}
+
+@test "gli script del bundle esportato funzionano" {
+  EXPORTS="$OFFICE_TEST_DIR/exports"
+  "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --export-dir "$EXPORTS"
+  run env OFFICE_SHARED_DIR="$EXPORTS/flow/shared-context" "$EXPORTS/flow/agents/setstatus.sh" marco WORKING "API"
+  assert_success
+}
+
+@test "il bundle contiene le istruzioni di integrazione" {
+  EXPORTS="$OFFICE_TEST_DIR/exports"
+  "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --export-dir "$EXPORTS"
+  [ -f "$EXPORTS/flow/INTEGRAZIONE.md" ]
+  run grep -q "flow" "$EXPORTS/flow/INTEGRAZIONE.md"
+  assert_success
+  run grep -qi "CLAUDE.md" "$EXPORTS/flow/INTEGRAZIONE.md"
+  assert_success
+}
+
+@test "l'export elenca il team nelle istruzioni di integrazione" {
+  EXPORTS="$OFFICE_TEST_DIR/exports"
+  "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --export-dir "$EXPORTS"
+  run grep -q "Giulia" "$EXPORTS/flow/INTEGRAZIONE.md"
+  assert_success
+}
+
+@test "un export già esistente e non vuoto viene rifiutato" {
+  EXPORTS="$OFFICE_TEST_DIR/exports"
+  mkdir -p "$EXPORTS/flow"
+  echo "roba mia" > "$EXPORTS/flow/file.txt"
+  run "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --export-dir "$EXPORTS"
+  [ "$status" -eq 2 ]
+  assert_output --partial "flow"
+  run cat "$EXPORTS/flow/file.txt"
+  assert_output "roba mia"
+}
+
+# ── Protezione della directory di destinazione ────────────────────────────────
+
+@test "--target su directory non vuota viene rifiutata senza --force" {
+  mkdir -p "$TARGET"
+  echo "progetto esistente" > "$TARGET/CLAUDE.md"
+  run "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --target "$TARGET"
+  [ "$status" -eq 2 ]
+  assert_output --partial "force"
+  run cat "$TARGET/CLAUDE.md"
+  assert_output "progetto esistente"
+}
+
+@test "--force accetta una directory non vuota" {
+  mkdir -p "$TARGET"
+  echo "progetto esistente" > "$TARGET/CLAUDE.md"
+  run "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --target "$TARGET" --force
+  assert_success
+  run grep -q "Giulia" "$TARGET/CLAUDE.md"
+  assert_success
+}
+
+@test "--target su directory vuota non richiede --force" {
+  mkdir -p "$TARGET"
+  run "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --target "$TARGET"
+  assert_success
+}
+
+@test "in modalità --target non viene scritto INTEGRAZIONE.md" {
+  "$OFFICE_ROOT/setup.sh" --config "$CONFIG" --target "$TARGET"
+  [ ! -f "$TARGET/INTEGRAZIONE.md" ]
+}

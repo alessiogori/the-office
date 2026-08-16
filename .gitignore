@@ -6,3 +6,6 @@ shared-context/queues/
 shared-context/inbox/
 shared-context/MSG-LOG.jsonl
 shared-context/AGENT-STATUS.json
+
+# Bundle generati da setup.sh
+exports/

@@ -38,7 +38,16 @@ mkdir -p "$INBOX_DIR/$RECIPIENT"
 
 # ── Genera timestamp e ID univoco ─────────────────────────────────────────────
 TIMESTAMP=$(date "+%Y-%m-%dT%H:%M:%S")
-MSG_ID="msg-$(date +%Y%m%d-%H%M%S)-${FROM:0:3}${RECIPIENT:0:3}"
+# Suffisso progressivo: due invii nello stesso secondo devono restare
+# distinguibili, altrimenti il secondo sovrascrive il file inbox del primo.
+MSG_BASE="msg-$(date +%Y%m%d-%H%M%S)-${FROM:0:3}${RECIPIENT:0:3}"
+MSG_ID="$MSG_BASE"
+MSG_N=1
+while [ -e "$INBOX_DIR/$RECIPIENT/$MSG_ID.md" ] \
+   || { [ -f "$LOG_FILE" ] && grep -qF "\"id\":\"$MSG_ID\"" "$LOG_FILE"; }; do
+  MSG_N=$((MSG_N + 1))
+  MSG_ID="$MSG_BASE-$MSG_N"
+done
 
 # ── Scrivi evento SENT nel log JSONL ──────────────────────────────────────────
 # Usa Python3 per escaping JSON sicuro: gestisce \, ", \n, \t, Unicode, ecc.

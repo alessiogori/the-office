@@ -34,7 +34,7 @@ I submodule servono solo a far girare i test. Il sistema funziona anche senza.
 
 Sei schermate, in quest'ordine.
 
-**1. Il progetto.** Directory di destinazione, nome, descrizione, stack tecnologico, brand. Finiscono nei documenti generati e in `shared-context/`.
+**1. Il progetto.** Nome, descrizione, stack tecnologico, brand. Non chiede una directory: il team viene **esportato** come bundle in `exports/<nome-progetto>/`, e nessun progetto esistente viene toccato. Se esiste già un export con quel nome, te lo dice e ti fa scegliere un altro nome.
 
 **2. Quante persone.** Da 1 a 12. Il tetto non è arbitrario: ogni agente è un terminale aperto, e oltre la dozzina il coordinamento costa più di quanto renda.
 
@@ -46,12 +46,34 @@ Sei schermate, in quest'ordine.
 
 **6. Conferma.** Il wizard mostra il team e chiede il via. Prima di quel sì non viene scritto niente su disco.
 
+## Il bundle esportato
+
+Il risultato è un albero autonomo in `exports/<slug>/`: non dipende da the-office, e lo copi dove vuoi. Contiene anche un `INTEGRAZIONE.md` scritto sul tuo team, con i comandi per innestarlo.
+
+**Progetto nuovo o senza `CLAUDE.md`:**
+
+```bash
+cp -R exports/acme-shop/. ~/Code/acme-shop/
+```
+
+**Progetto che ha già un `CLAUDE.md`:** copia tutto tranne i file di configurazione, poi appendi la sezione agenti invece di sostituire il file. `INTEGRAZIONE.md` riporta i comandi esatti, incluso l'avviso su `shared-context/`: `THESIS.md`, `ROADMAP.md` e `BRAND-GUIDE.md` contengono segnaposto, e se il progetto ha già una sua visione non vanno sovrascritti.
+
+### Installare direttamente
+
+Se parti da una directory vuota e vuoi saltare il passaggio:
+
+```bash
+./setup.sh --config team.json --target ~/Code/mio-progetto
+```
+
+Su una directory **non vuota** il comando si ferma: in interattivo chiede conferma, in modalità `--config` rifiuta e richiede `--force`. Il setup sovrascrive `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.gitignore` e i file di `shared-context/` senza fonderli, quindi su un progetto vivo l'export resta la strada giusta.
+
 ## Senza il wizard
 
 Utile per rifare lo stesso setup su più progetti, per il CI, o su una macchina senza `gum`:
 
 ```bash
-./setup.sh --config team.json --target ~/Code/mio-progetto
+./setup.sh --config team.json --export-dir ./exports
 ```
 
 ```json
@@ -80,10 +102,11 @@ Per catturare le scelte di una sessione interattiva e riusarle:
 ./setup.sh --save-config team.json
 ```
 
-## Cosa hai ottenuto
+## Cosa contiene il bundle
 
 ```
-mio-progetto/
+exports/acme-shop/
+├── INTEGRAZIONE.md                   ← come innestarlo in un progetto esistente
 ├── CLAUDE.md, AGENTS.md, GEMINI.md   ← generati dal tuo team, non da un modello fisso
 ├── agents/
 │   ├── lib/                          ← team.sh, roster.sh, tui.sh
@@ -103,7 +126,7 @@ Ogni cartella persona contiene `IDENTITY.md` (confini), `HEARTBEAT.md` (stato), 
 ## Primo avvio
 
 ```bash
-cd mio-progetto
+cd ~/Code/acme-shop      # dove hai innestato il bundle
 ./agents/dashboard.sh        # chi c'è
 ./agents/iterm.sh all        # una finestra iTerm2 per ciascuno, colori distinti
 ```

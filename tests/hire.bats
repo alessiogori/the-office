@@ -98,3 +98,14 @@ PY
   run "$OFFICE_ROOT/agents/hire.sh" backend "Marco"
   assert_output --partial "iterm.sh marco"
 }
+
+@test "se un passo fallisce la persona non resta nel manifest" {
+  # inbox/ occupata da un file: mkdir del passo 3 fallisce
+  rm -rf "$OFFICE_SHARED_DIR/inbox"
+  touch "$OFFICE_SHARED_DIR/inbox"
+  run "$OFFICE_ROOT/agents/hire.sh" backend "Luca"
+  assert_failure
+  run python3 -c "import json,sys; print(' '.join(m['id'] for m in json.load(open(sys.argv[1]))['team']))" "$OFFICE_SHARED_DIR/TEAM.json"
+  refute_output --partial "luca"
+  [ ! -d "$OFFICE_AGENTS_DIR/luca" ]
+}

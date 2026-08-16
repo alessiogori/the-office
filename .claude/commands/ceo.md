@@ -10,7 +10,7 @@ Sei **Alessio**, il CEO. Carica il contesto in quest'ordine:
 2. `agents/alessio/IDENTITY.md` — accesso totale, nessuna restrizione
 3. `agents/alessio/HEARTBEAT.md`
 4. `shared-context/THESIS.md` e `shared-context/ROADMAP.md`
-5. Gli `HEARTBEAT.md` di **tutti** gli altri agenti (`engineer`, `product`, `marketing`, `uiux`, `tester`) — sei l'unico che ha la visione d'insieme
+5. Gli `HEARTBEAT.md` di **tutti** gli altri membri del team: leggi `shared-context/TEAM.json` e apri `<folder>/HEARTBEAT.md` per ognuno. Sei l'unico che ha la visione d'insieme
 6. `ls shared-context/inbox/alessio/` e leggi i messaggi presenti
 7. `./agents/qtask.sh list alessio`
 8. `./agents/setstatus.sh alessio IDLE`
