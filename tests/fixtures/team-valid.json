@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "team": [
+    { "id": "alessio", "name": "Alessio", "role": "ceo", "label": "CEO / Founder",
+      "folder": "agents/alessio", "log": null, "color": "#f5b400", "coordinator": true },
+    { "id": "stefano", "name": "Stefano", "role": "engineer", "label": "Engineer (full-stack)",
+      "folder": "agents/stefano", "log": "BUILD-LOG.md", "color": "#4a90e2", "coordinator": false },
+    { "id": "marwen", "name": "Marwen", "role": "tester", "label": "Tester / QA",
+      "folder": "agents/marwen", "log": "BUG-LOG.md", "color": "#2ecc71", "coordinator": false }
+  ]
+}
