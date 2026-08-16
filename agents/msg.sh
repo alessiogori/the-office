@@ -4,51 +4,33 @@
 # Esempio: ./agents/msg.sh stefano walter "Ho finito il modulo pagamenti. Rivedi docs/payments.md."
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG_FILE="$SCRIPT_DIR/../shared-context/MSG-LOG.jsonl"
-INBOX_DIR="$SCRIPT_DIR/../shared-context/inbox"
+source "$SCRIPT_DIR/lib/team.sh"
+
+SHARED_DIR="${OFFICE_SHARED_DIR:-$SCRIPT_DIR/../shared-context}"
+LOG_FILE="$SHARED_DIR/MSG-LOG.jsonl"
+INBOX_DIR="$SHARED_DIR/inbox"
 
 FROM=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 RECIPIENT=$(echo "$2" | tr '[:upper:]' '[:lower:]')
 MESSAGE="$3"
 
 if [[ -z "$FROM" || -z "$RECIPIENT" || -z "$MESSAGE" ]]; then
-  echo "Uso: ./agents/msg.sh <mittente> <destinatario> \"<messaggio>\""
-  echo "Agenti: alessio, stefano, walter, veronica, alessandra, marwen"
+  echo "Uso: ./agents/msg.sh <mittente> <destinatario> \"<messaggio>\"" >&2
+  echo "Agenti: $(team_ids | tr '\n' ' ')" >&2
   exit 1
 fi
 
 if [[ "$FROM" == "$RECIPIENT" ]]; then
-  echo "Errore: mittente e destinatario sono la stessa persona ('$FROM')."
+  echo "Errore: mittente e destinatario sono la stessa persona ('$FROM')." >&2
   exit 1
 fi
 
-# ── Risolvi nomi visualizzati ─────────────────────────────────────────────────
-resolve_name() {
-  case "$1" in
-    alessio)    echo "Alessio" ;;
-    stefano)    echo "Stefano" ;;
-    walter)     echo "Walter" ;;
-    veronica)   echo "Veronica" ;;
-    alessandra) echo "Alessandra" ;;
-    marwen)     echo "Marwen" ;;
-    *)          echo "" ;;
-  esac
-}
+# ── Valida e risolvi i nomi dal manifest ──────────────────────────────────────
+team_validate "$FROM" || exit 1
+team_validate "$RECIPIENT" || exit 1
 
-FROM_NAME=$(resolve_name "$FROM")
-WINDOW_NAME=$(resolve_name "$RECIPIENT")
-
-if [[ -z "$FROM_NAME" ]]; then
-  echo "Mittente '$FROM' non riconosciuto."
-  echo "Agenti validi: alessio, stefano, walter, veronica, alessandra, marwen"
-  exit 1
-fi
-
-if [[ -z "$WINDOW_NAME" ]]; then
-  echo "Destinatario '$RECIPIENT' non riconosciuto."
-  echo "Agenti validi: alessio, stefano, walter, veronica, alessandra, marwen"
-  exit 1
-fi
+FROM_NAME=$(team_get "$FROM" name)
+WINDOW_NAME=$(team_get "$RECIPIENT" name)
 
 # ── Assicura che shared-context/ e inbox/ esistano ───────────────────────────
 mkdir -p "$(dirname "$LOG_FILE")"
@@ -86,6 +68,15 @@ MSGFILE
 NOTIFY_TEXT="Nuovo messaggio da $FROM_NAME (ID: $MSG_ID) — leggi shared-context/inbox/$RECIPIENT/$MSG_ID.md"
 
 # ── Invia via iTerm2 AppleScript ──────────────────────────────────────────────
+# Saltata quando OFFICE_NO_ITERM è impostata o osascript non c'è: il messaggio
+# resta su log e inbox, che sono la consegna vera.
+if [[ -n "${OFFICE_NO_ITERM:-}" ]] || ! command -v osascript >/dev/null 2>&1; then
+  echo "Messaggio registrato per $WINDOW_NAME (consegna iTerm2 saltata)."
+  echo "ID:   $MSG_ID"
+  echo "File: $MSG_FILE"
+  exit 0
+fi
+
 # Usa return (CR, 0x0D) invece di newline (LF, 0x0A) per triggerare il submit in Claude Code
 RESULT=$(osascript << EOF
 tell application "iTerm2"
