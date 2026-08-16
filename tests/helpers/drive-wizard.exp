@@ -1,0 +1,64 @@
+#!/usr/bin/expect -f
+# Pilota il wizard interattivo di setup.sh attraverso uno pseudo-terminale.
+#
+# Uso: drive-wizard.exp <export-dir> <nome-progetto> <n-persone> <ruolo-2> <nome-1> <nome-2>
+#
+# Nota sulla geometria: lo pty di expect nasce senza dimensioni, e con
+# larghezza zero la textinput di gum va in panico. Le righe/colonne vanno
+# impostate esplicitamente, altrimenti il test fallisce per un motivo che
+# non c'entra con il codice sotto test.
+
+set timeout 30
+log_user 1
+
+set export_dir  [lindex $argv 0]
+set proj_name   [lindex $argv 1]
+set n_people    [lindex $argv 2]
+set role_two    [lindex $argv 3]
+set name_one    [lindex $argv 4]
+set name_two    [lindex $argv 5]
+
+# -nottycopy: senza, spawn prova a copiare le impostazioni dal terminale di
+# controllo, che sotto bats non esiste (stdin è /dev/null) e resta appeso.
+set stty_init "rows 40 columns 120"
+spawn -nottycopy ./setup.sh --export-dir $export_dir
+stty rows 40 columns 120 < $spawn_out(slave,name)
+
+expect {
+  timeout { puts "TIMEOUT: nome progetto"; exit 1 }
+  "Nome del progetto"
+}
+# Svuota il valore di default prima di scrivere il nostro
+send "[string repeat "\177" 40]$proj_name\r"
+
+expect { timeout { puts "TIMEOUT: descrizione"; exit 1 } "Descrizione breve" }
+send "Progetto di verifica automatica\r"
+
+expect { timeout { puts "TIMEOUT: stack"; exit 1 } "Tech stack" }
+send "Bash\r"
+
+expect { timeout { puts "TIMEOUT: brand"; exit 1 } "Nome brand" }
+send "\r"
+
+expect { timeout { puts "TIMEOUT: dimensione team"; exit 1 } "Quante persone" }
+send "[string repeat "\177" 4]$n_people\r"
+
+expect { timeout { puts "TIMEOUT: coordinatore"; exit 1 } "Chi coordina" }
+send "\r"
+
+expect { timeout { puts "TIMEOUT: nome 1"; exit 1 } "Come si chiama" }
+send "[string repeat "\177" 40]$name_one\r"
+
+expect { timeout { puts "TIMEOUT: ruolo 2"; exit 1 } "che ruolo ha" }
+send "$role_two"
+sleep 0.8
+send "\r"
+
+expect { timeout { puts "TIMEOUT: nome 2"; exit 1 } "Come si chiama" }
+send "[string repeat "\177" 40]$name_two\r"
+
+expect { timeout { puts "TIMEOUT: conferma"; exit 1 } "Esporto il bundle" }
+send "y"
+
+expect eof
+puts "WIZARD-OK"
