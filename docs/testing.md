@@ -24,6 +24,7 @@ La suite completa impiega qualche minuto: `setup-wizard.bats` genera progetti ve
 | `scripts.bats` | setstatus, qtask, launch, iterm, dashboard |
 | `messaging.bats` | msg e ack |
 | `setup-wizard.bats` | Generazione end-to-end via `--config` |
+| `tui-interactive.bats` | Il wizard vero, pilotato via pty. Opt-in, vedi sotto |
 | `hire.bats` | Aggiunta di una persona, rollback incluso |
 
 ## L'isolamento
@@ -52,7 +53,24 @@ Installale con `use_manifest <nome>`.
 
 ## Testare codice interattivo
 
-`gum` non si pilota da un test. La regola che rende il sistema testabile è che **ogni comando interattivo ha una forma ad argomenti equivalente**:
+### I test opt-in del wizard
+
+`tests/tui-interactive.bats` pilota le schermate `gum` vere con `expect`, attraverso uno pseudo-terminale. Girano solo con un opt-in esplicito, da un terminale interattivo:
+
+```bash
+OFFICE_TUI_TESTS=1 ./tests/run.sh tests/tui-interactive.bats
+```
+
+Altrove si saltano, e la ragione è concreta: sotto bats lo stdin è `/dev/null`, e in quelle condizioni `expect` non riesce a stabilire lo pty — il test non fallisce, si appende. Un test che si appende è peggio di un test assente, quindi la condizione è esplicita invece che sperata.
+
+Due trappole se tocchi `tests/helpers/drive-wizard.exp`:
+
+- **La geometria dello pty va impostata a mano.** Nasce senza dimensioni, e con larghezza zero la `textinput` di gum va in panico. `stty rows 40 columns 120` sullo slave, altrimenti il test fallisce per un motivo che non c'entra col codice sotto test.
+- **I campi hanno un valore di default.** Vanno svuotati con dei backspace prima di scrivere, altrimenti il testo si accoda a quello che c'è già.
+
+### Il resto
+
+`gum` non si pilota da un test normale. La regola che rende il sistema testabile è che **ogni comando interattivo ha una forma ad argomenti equivalente**:
 
 ```bash
 ./agents/hire.sh backend "Marco"    # nessun gum, stesso risultato

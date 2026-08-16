@@ -12,7 +12,7 @@ Dal clone al primo agente che lavora.
 | `iTerm2` | Consegna dei messaggi tra agenti su macOS | no, ma consigliato |
 | `git` con submodule | La suite di test | solo per contribuire |
 
-Se `gum` manca, il wizard te lo dice e propone il comando giusto per il tuo sistema. Puoi anche non installarlo e usare la modalità con file di configurazione.
+Se `gum` manca, il wizard te lo dice e propone il comando giusto per il tuo sistema (`brew install gum` su macOS). Puoi anche non installarlo e usare la modalità con file di configurazione.
 
 ## Installazione
 
