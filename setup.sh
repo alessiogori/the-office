@@ -201,6 +201,104 @@ $roster
 GEMINIEOF
 }
 
+# ── Wizard interattivo ────────────────────────────────────────────────────────
+# Raccoglie le scelte con gum e le scrive in un file di config temporaneo,
+# assegnandolo a CONFIG_FILE: da lì in poi il percorso è identico a --config.
+wizard_collect_interactive() {
+  tui_require_gum
+
+  gum style --border rounded --padding "1 3" --margin "1 0" \
+    "the-office — composizione del team"
+
+  local target name desc stack brand size
+  target=$(gum input --placeholder "/Users/me/Code/mio-progetto" --header "Directory di destinazione")
+  [ -n "$target" ] || { echo "Directory obbligatoria." >&2; exit 2; }
+  TARGET_DIR="$target"
+
+  name=$(gum input --value "my-project" --header "Nome del progetto")
+  desc=$(gum input --placeholder "Cosa fa questo progetto" --header "Descrizione breve")
+  stack=$(gum input --placeholder "Laravel, Vue, MySQL" --header "Tech stack")
+  brand=$(gum input --value "$name" --header "Nome brand")
+
+  # Quante persone. Il tetto di 12 non è arbitrario: sono 12 terminali aperti.
+  while true; do
+    size=$(gum input --value "4" --header "Quante persone servono nel team? (1-12)")
+    case "$size" in
+      ''|*[!0-9]*) gum style --foreground 196 "Inserisci un numero."; continue ;;
+    esac
+    if [ "$size" -ge 1 ] && [ "$size" -le 12 ]; then break; fi
+    gum style --foreground 196 "Il team deve avere tra 1 e 12 persone."
+  done
+
+  CONFIG_FILE="$(mktemp)"
+  local roles_file names_file
+  roles_file="$(mktemp)"
+  names_file="$(mktemp)"
+
+  # Persona 1: sempre un ruolo di coordinamento. Il vincolo è un passo del
+  # flusso, non una regola nascosta nella validazione.
+  local slug person_name suggested i new_id existing existing_id dup
+  slug=$(tui_pick_coordinator) || { echo "Selezione annullata." >&2; exit 2; }
+  suggested=$(tui_suggest_name 0)
+  person_name=$(tui_ask_name "$suggested")
+  [ -n "$person_name" ] || { echo "Nome obbligatorio." >&2; exit 2; }
+  echo "$slug"        >> "$roles_file"
+  echo "$person_name" >> "$names_file"
+
+  # Persone da 2 a N: uno slot alla volta, così i duplicati di ruolo
+  # funzionano senza casi speciali.
+  i=1
+  while [ "$i" -lt "$size" ]; do
+    slug=$(tui_pick_role "Persona $((i + 1)) di $size — che ruolo ha?") \
+      || { echo "Selezione annullata." >&2; exit 2; }
+    suggested=$(tui_suggest_name "$i")
+    person_name=$(tui_ask_name "$suggested")
+    [ -n "$person_name" ] || { echo "Nome obbligatorio." >&2; exit 2; }
+
+    new_id=$(roster_id_from_name "$person_name")
+    dup=0
+    while read -r existing; do
+      existing_id=$(roster_id_from_name "$existing")
+      [ "$existing_id" = "$new_id" ] && dup=1
+    done < "$names_file"
+    if [ "$dup" -eq 1 ]; then
+      gum style --foreground 196 "Esiste già una persona con id '$new_id'. Scegli un altro nome."
+      continue
+    fi
+
+    echo "$slug"        >> "$roles_file"
+    echo "$person_name" >> "$names_file"
+    i=$((i + 1))
+  done
+
+  python3 - "$CONFIG_FILE" "$name" "$desc" "$stack" "$brand" "$target" "$roles_file" "$names_file" <<'PY'
+import json, sys
+out, name, desc, stack, brand, target, roles_f, names_f = sys.argv[1:9]
+roles = [l.strip() for l in open(roles_f) if l.strip()]
+names = [l.strip() for l in open(names_f) if l.strip()]
+json.dump({
+    "project": {"name": name, "description": desc, "stack": stack,
+                "brand": brand, "target": target},
+    "team": [{"role": r, "name": n} for r, n in zip(roles, names)],
+}, open(out, "w"), indent=2, ensure_ascii=False)
+PY
+
+  rm -f "$roles_file" "$names_file"
+
+  # Riepilogo e conferma: nulla viene scritto su disco prima di questo sì.
+  echo ""
+  gum style --border rounded --padding "0 2" "Team"
+  python3 - "$CONFIG_FILE" <<'PY'
+import json, sys
+for m in json.load(open(sys.argv[1]))["team"]:
+    print(f"  {m['name']:<14} {m['role']}")
+PY
+  echo ""
+  gum confirm "Genero il progetto in $TARGET_DIR?" || { echo "Setup annullato."; exit 0; }
+
+  validate_config "$CONFIG_FILE"
+}
+
 # ── Raccolta della configurazione ─────────────────────────────────────────────
 if [ -n "$CONFIG_FILE" ]; then
   [ -f "$CONFIG_FILE" ] || { echo "Errore: $CONFIG_FILE non trovato." >&2; exit 2; }
