@@ -7,30 +7,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Cos'è questo repo
 
-Due cose in un solo repo:
+Un sistema multi-agente installabile in altri progetti: `agents/`, `catalog/`,
+`shared-context/`, `setup.sh`, `AGENTS.md`, `GEMINI.md`. `setup.sh` compone un
+team su misura e ne esporta un bundle autonomo, pronto da innestare altrove.
 
-1. **Il sistema multi-agente** (`agents/`, `catalog/`, `shared-context/`, `setup.sh`, `AGENTS.md`, `GEMINI.md`) — un template installabile in altri progetti. È il prodotto principale; `setup.sh` compone un team su misura e lo installa altrove.
-2. **`office-overlay/`** — app nativa Tauri 2 + Pixi.js che visualizza in tempo reale lo stato degli agenti come stanza pixel-art. È l'unico codice compilabile del repo. **Non è team-agnostica**: ha i sei agenti di questo repo cablati in `src/agents.ts` e sei scrivanie fisse, e non viene distribuita da `setup.sh`. Su un progetto generato con un team diverso non mostrerebbe nulla.
-
-Il resto (`docs/`, `examples/`, `traffic-data/`) è documentazione e dati di esempio.
+Non c'è codice applicativo: sono script bash, dati JSON e markdown. Il resto
+(`docs/`, `examples/`, `traffic-data/`) è documentazione e dati di esempio.
 
 ## Comandi
-
-### office-overlay (Bun + Tauri + Vite)
-
-```bash
-cd office-overlay
-bun install
-bun run tauri dev      # dev completo (Rust + Vite su :1420)
-bun run dev            # solo frontend Vite
-bun run build          # tsc && vite build
-bun run tauri build    # bundle nativo
-npx tsc --noEmit       # typecheck isolato
-```
-
-Richiede Rust/Cargo e Xcode CLT su macOS. Non esiste una test suite: la verifica è visuale (`tauri dev` + `setstatus.sh` da un altro terminale).
-
-### Sistema agenti
 
 ```bash
 ./agents/launch.sh <agente>            # avvia Claude Code col prompt di ruolo
@@ -44,9 +28,9 @@ Richiede Rust/Cargo e Xcode CLT su macOS. Non esiste una test suite: la verifica
 ./agents/live-dashboard.sh             # dashboard in refresh continuo
 ./agents/hire.sh [<ruolo> "<Nome>"]    # aggiunge una persona al team esistente
 
-./setup.sh                             # wizard TUI: compone il team e installa
-./setup.sh --config <f> --target <d>   # non interattivo e riproducibile
-./setup.sh --save-config <file>        # esporta le scelte fatte
+./setup.sh                             # wizard TUI: compone il team ed esporta
+./setup.sh --config <f>                # non interattivo, esporta in exports/
+./setup.sh --config <f> --target <d>   # installa direttamente in una directory
 ```
 
 Gli id validi **non sono cablati da nessuna parte**: vengono da `shared-context/TEAM.json`. Ogni script valida contro il manifest e, se sbagli, ti stampa gli id disponibili.
@@ -99,27 +83,6 @@ Nei file del catalogo `__AGENT_NAME__`, `__AGENT_ID__` e `__ROLE_LABEL__` sono s
 ### Aggiungere un ruolo al catalogo
 
 Una voce in `catalog/roles.json` con tutti i campi obbligatori. `tests/catalog.bats` verifica che non manchi nulla e che i `collaborates` puntino a slug esistenti. Non serve toccare codice: `setup.sh` e `hire.sh` la vedono subito.
-
-### office-overlay: il flusso dei dati
-
-```
-setstatus.sh / msg.sh
-    ↓ scrive shared-context/*
-watcher Rust (notify crate, src-tauri/src/lib.rs)
-    ↓ emit "agent-status" / "agent-msg"
-main.ts (listen)
-    ↓
-AgentSprite.setState() → Pixi render
-```
-
-- **`src-tauri/src/lib.rs`** — risolve `shared-context/` risalendo fino a 5 livelli dalla cwd, override con `OFFICE_SHARED_DIR` / `OFFICE_STATUS_FILE` / `OFFICE_MSG_LOG`. Due watcher separati: status (rilegge il JSON intero) e msg-log (tail incrementale con offset, legge solo le righe nuove). Espone un solo comando, `get_status`, usato per il caricamento iniziale.
-- **`src/agents.ts`** — sorgente unica di verità per id, nomi, ruoli e colori degli agenti. Aggiungere/rinominare un agente parte da qui **e** dalla validazione in ogni script bash.
-- **`src/room.ts`** — costruisce la stanza (tile, scrivanie, decorazioni) e restituisce gli anchor (`desks`, `monitors`, `steamAnchor`, `windowGlow`) usati da main.ts.
-- **`src/agent.ts`** — sprite procedurale per agente: animazioni per stato, wander in IDLE, badge task, flash sui messaggi.
-- **`src/atmosphere.ts`** / **`src/daynight.ts`** — vapore, glow pulsante, tinta ambientale in base all'ora.
-- La finestra è borderless, trasparente, always-on-top (`src-tauri/tauri.conf.json`); drag handle e context menu sono HTML in `index.html`, non Pixi.
-
-Gli sprite sono disegnati proceduralmente con `Graphics`, senza spritesheet: `src/assets/` contiene solo le icone del template Tauri. Il render non dipende da asset esterni.
 
 ### Hook di stato automatico
 
