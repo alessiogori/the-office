@@ -15,16 +15,9 @@ L'HEARTBEAT è il tuo unico punto di ripresa alla sessione successiva: se una co
 
 ## 2. Log di ruolo
 
-Aggiungi una voce al tuo log, se hai qualcosa da registrare:
+Il tuo log di ruolo è indicato dal campo `log` della tua voce in `shared-context/TEAM.json`, e sta dentro la cartella indicata da `folder`. Aggiungi una voce, se hai qualcosa da registrare.
 
-| Ruolo | File |
-|-------|------|
-| Stefano | `agents/engineer/BUILD-LOG.md` |
-| Walter | `agents/product/BACKLOG.md` |
-| Veronica | `agents/marketing/CONTENT-CALENDAR.md` o `DOC-QUEUE.md` |
-| Alessandra | `agents/uiux/UI-REVIEW-LOG.md` |
-| Marwen | `agents/tester/BUG-LOG.md` |
-| Alessio | nessun log dedicato — usa l'HEARTBEAT |
+Se `log` è `null` non hai un log dedicato: usa l'HEARTBEAT e salta questo passo.
 
 ## 3. File di sessione
 

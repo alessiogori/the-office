@@ -11,19 +11,21 @@ Aggiorna la tua sezione nel file di sessione di oggi.
 
 1. Ricava la data di oggi con `date "+%Y-%m-%d"`. Il file è `docs/sessions/<data>-session.md`.
 2. Se la directory non esiste: `mkdir -p docs/sessions`.
-3. Se il file non esiste, crealo con l'intestazione e **tutte e sei** le sezioni agente vuote, in quest'ordine: Alessio (CEO), Stefano (Engineer), Walter (Product), Veronica (Marketing & Docs), Alessandra (UI/UX), Marwen (Tester).
+3. Se il file non esiste, crealo con l'intestazione e una sezione vuota per ogni persona in `shared-context/TEAM.json`, nell'ordine del manifest. L'intestazione di sezione è `## <Nome> — <Etichetta del ruolo>`.
 
 ```markdown
 # Sessione <data>
 
-## Alessio — CEO
+## Giulia — Project Manager
 _(nessun aggiornamento)_
 
-## Stefano — Engineer
+## Marco — Backend Engineer
 _(nessun aggiornamento)_
 
 ...
 ```
+
+Il numero di sezioni dipende dal team: questo progetto non ha un elenco fisso di ruoli.
 
 4. Modifica **solo la tua sezione**. Non toccare quelle degli altri agenti nemmeno per riformattarle: il file è condiviso e altre sessioni ci scrivono in parallelo. Usa Edit sulla tua sezione, mai Write sull'intero file se esiste già.
 5. Nella tua sezione scrivi, in forma sintetica:
