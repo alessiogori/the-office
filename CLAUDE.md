@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Due cose in un solo repo:
 
 1. **Il sistema multi-agente** (`agents/`, `catalog/`, `shared-context/`, `setup.sh`, `AGENTS.md`, `GEMINI.md`) — un template installabile in altri progetti. È il prodotto principale; `setup.sh` compone un team su misura e lo installa altrove.
-2. **`office-overlay/`** — app nativa Tauri 2 + Pixi.js che visualizza in tempo reale lo stato degli agenti come stanza pixel-art. È l'unico codice compilabile del repo.
+2. **`office-overlay/`** — app nativa Tauri 2 + Pixi.js che visualizza in tempo reale lo stato degli agenti come stanza pixel-art. È l'unico codice compilabile del repo. **Non è team-agnostica**: ha i sei agenti di questo repo cablati in `src/agents.ts` e sei scrivanie fisse, e non viene distribuita da `setup.sh`. Su un progetto generato con un team diverso non mostrerebbe nulla.
 
 Il resto (`docs/`, `examples/`, `traffic-data/`) è documentazione e dati di esempio.
 
