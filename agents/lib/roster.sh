@@ -150,6 +150,8 @@ PY
 }
 
 # Sostituisce i segnaposto di un template e scrive il risultato.
+# Usata solo da chi ha bisogno di rendere un singolo file: la generazione
+# completa di una persona passa dal blocco python unico qui sotto.
 _roster_render() {
   local src="$1" dest="$2" name="$3" label="$4" id="$5"
   python3 - "$src" "$dest" "$name" "$label" "$id" <<'PY'
@@ -164,124 +166,139 @@ PY
 }
 
 # roster_generate_person <slug> <nome> <id> <dest_agents_dir> <team_json>
+#
+# Un solo processo python: prima ne servivano quindici, e ognuno riapriva e
+# riparsava il catalogo da 36 ruoli. Su un team di cinque persone erano
+# settanta letture dello stesso file.
 roster_generate_person() {
-  local slug="$1" name="$2" id="$3" dest_dir="$4" team_json="$5"
+  local slug="$1" name="$2" id="$3" dest_dir="$4"
   roster_require_catalog
 
-  local label category mission log log_template tension
-  label=$(roster_role_get "$slug" label) || return 1
-  [ -n "$label" ] || return 1
-  category=$(roster_role_get "$slug" category)
-  mission=$(roster_role_get "$slug" mission)
-  log=$(roster_role_get "$slug" log)
-  log_template=$(roster_role_get "$slug" logTemplate)
-  tension=$(roster_role_get "$slug" tension)
+  python3 - "$(roster_catalog_path)" "$slug" "$name" "$id" "$dest_dir" <<'PY'
+import os
+import json
+import sys
 
-  local person_dir="$dest_dir/$id"
-  mkdir -p "$person_dir"
+catalog_path, slug, name, agent_id, dest_dir = sys.argv[1:6]
 
-  local catalog_dir
-  catalog_dir="$(roster_catalog_dir)"
+roles = {r["slug"]: r for r in json.load(open(catalog_path))["roles"]}
+role = roles.get(slug)
+if role is None:
+    sys.exit(1)
 
-  # ── IDENTITY.md — interamente derivato dai dati, nessuna creatività ─────────
-  {
-    echo "# $name — Identity"
-    echo ""
-    echo "## Nome"
-    echo "$name"
-    echo ""
-    echo "## Ruolo"
-    echo "$label ($category)"
-    echo ""
-    echo "## Missione"
-    echo "$mission"
-    echo ""
-    echo "## Cosa può fare"
-    roster_role_get "$slug" can | while read -r line; do
-      [ -n "$line" ] && echo "- $line"
-    done
-    echo ""
-    echo "## Cosa non può fare"
-    roster_role_get "$slug" cannot | while read -r line; do
-      [ -n "$line" ] && echo "- $line"
-    done
-    echo ""
-    echo "## Lavora con"
-    roster_role_get "$slug" collaborates | while read -r other; do
-      [ -n "$other" ] && echo "- $(roster_role_get "$other" label)"
-    done
-    echo ""
-    echo "## Attrito dichiarato"
-    echo "$tension"
-    echo ""
-    echo "I disaccordi sono parte del lavoro. Quando serve, spingi."
-    echo ""
-    echo "## Comunicazione"
-    echo ""
-    echo "Invia un messaggio:"
-    echo '```'
-    echo "./agents/msg.sh $id <destinatario> \"testo\""
-    echo '```'
-    echo ""
-    echo "Chi c'è nel team: \`shared-context/TEAM.json\`"
-    echo ""
-    echo "Controlla l'inbox:"
-    echo '```'
-    echo "ls shared-context/inbox/$id/"
-    echo '```'
-    echo ""
-    echo "Conferma ricezione:"
-    echo '```'
-    echo "./agents/ack.sh <msg-id> $id"
-    echo '```'
-    echo ""
-    echo "**Regola:** ACK ogni messaggio ricevuto prima di rispondere."
-    echo ""
-    echo "## Stato"
-    echo ""
-    echo '```'
-    echo "./agents/setstatus.sh $id WORKING \"<task corrente>\""
-    echo "./agents/setstatus.sh $id IDLE"
-    echo '```'
-  } > "$person_dir/IDENTITY.md"
+label = role["label"]
+catalog_dir = os.path.dirname(catalog_path)
+person_dir = os.path.join(dest_dir, agent_id)
+os.makedirs(person_dir, exist_ok=True)
 
-  # ── HEARTBEAT.md ────────────────────────────────────────────────────────────
-  _roster_render "$catalog_dir/templates/heartbeat.md" "$person_dir/HEARTBEAT.md" "$name" "$label" "$id"
 
-  # ── ROLE-BRIEF.md — la fonte per scrivere l'anima ───────────────────────────
-  {
-    echo "# $label — Role Brief"
-    echo ""
-    echo "Dati del ruolo dal catalogo. Servono a scrivere il SOUL.md quando manca."
-    echo ""
-    echo "- **Slug:** $slug"
-    echo "- **Categoria:** $category"
-    echo "- **Missione:** $mission"
-    echo "- **Attrito:** $tension"
-    echo ""
-    echo "## Può"
-    roster_role_get "$slug" can | while read -r line; do
-      [ -n "$line" ] && echo "- $line"
-    done
-    echo ""
-    echo "## Non può"
-    roster_role_get "$slug" cannot | while read -r line; do
-      [ -n "$line" ] && echo "- $line"
-    done
-    echo ""
-    echo "## Lavora con"
-    roster_role_get "$slug" collaborates | while read -r other; do
-      [ -n "$other" ] && echo "- $(roster_role_get "$other" label)"
-    done
-  } > "$person_dir/ROLE-BRIEF.md"
+def render(src, dest):
+    """Copia un template sostituendo i segnaposto."""
+    text = open(src).read()
+    text = (text.replace("__AGENT_NAME__", name)
+                .replace("__ROLE_LABEL__", label)
+                .replace("__AGENT_ID__", agent_id))
+    open(dest, "w").write(text)
 
-  # ── Log di ruolo, se previsto ───────────────────────────────────────────────
-  if [ -n "$log" ] && [ -n "$log_template" ]; then
-    _roster_render "$catalog_dir/templates/$log_template.md" "$person_dir/$log" "$name" "$label" "$id"
-  fi
 
-  # ── SOUL.md, solo se il catalogo ne ha una scritta ─────────────────────────
-  if [ -f "$catalog_dir/souls/$slug.md" ]; then
-    _roster_render "$catalog_dir/souls/$slug.md" "$person_dir/SOUL.md" "$name" "$label" "$id"
-  fi
+def bullets(items):
+    return "\n".join(f"- {i}" for i in items)
+
+
+collaborators = "\n".join(
+    f"- {roles[c]['label']}" for c in role["collaborates"] if c in roles
+)
+
+# ── IDENTITY.md — interamente derivato dai dati, nessuna creatività ──────────
+identity = f"""# {name} — Identity
+
+## Nome
+{name}
+
+## Ruolo
+{label} ({role['category']})
+
+## Missione
+{role['mission']}
+
+## Cosa può fare
+{bullets(role['can'])}
+
+## Cosa non può fare
+{bullets(role['cannot'])}
+
+## Lavora con
+{collaborators}
+
+## Attrito dichiarato
+{role['tension']}
+
+I disaccordi sono parte del lavoro. Quando serve, spingi.
+
+## Comunicazione
+
+Invia un messaggio:
+```
+./agents/msg.sh {agent_id} <destinatario> "testo"
+```
+
+Chi c'è nel team: `shared-context/TEAM.json`
+
+Controlla l'inbox:
+```
+ls shared-context/inbox/{agent_id}/
+```
+
+Conferma ricezione:
+```
+./agents/ack.sh <msg-id> {agent_id}
+```
+
+**Regola:** ACK ogni messaggio ricevuto prima di rispondere.
+
+## Stato
+
+```
+./agents/setstatus.sh {agent_id} WORKING "<task corrente>"
+./agents/setstatus.sh {agent_id} IDLE
+```
+"""
+open(os.path.join(person_dir, "IDENTITY.md"), "w").write(identity)
+
+# ── ROLE-BRIEF.md — la fonte per scrivere l'anima ────────────────────────────
+brief = f"""# {label} — Role Brief
+
+Dati del ruolo dal catalogo. Servono a scrivere il SOUL.md quando manca.
+
+- **Slug:** {slug}
+- **Categoria:** {role['category']}
+- **Missione:** {role['mission']}
+- **Attrito:** {role['tension']}
+
+## Può
+{bullets(role['can'])}
+
+## Non può
+{bullets(role['cannot'])}
+
+## Lavora con
+{collaborators}
+"""
+open(os.path.join(person_dir, "ROLE-BRIEF.md"), "w").write(brief)
+
+# ── HEARTBEAT.md ─────────────────────────────────────────────────────────────
+render(os.path.join(catalog_dir, "templates", "heartbeat.md"),
+       os.path.join(person_dir, "HEARTBEAT.md"))
+
+# ── Log di ruolo, se previsto ────────────────────────────────────────────────
+log_name, log_template = role.get("log"), role.get("logTemplate")
+if log_name and log_template:
+    render(os.path.join(catalog_dir, "templates", f"{log_template}.md"),
+           os.path.join(person_dir, log_name))
+
+# ── SOUL.md, solo se il catalogo ne ha una scritta ───────────────────────────
+soul = os.path.join(catalog_dir, "souls", f"{slug}.md")
+if os.path.isfile(soul):
+    render(soul, os.path.join(person_dir, "SOUL.md"))
+PY
 }

@@ -30,6 +30,8 @@ git submodule update --init --recursive
 
 I submodule servono solo a far girare i test. Il sistema funziona anche senza.
 
+Non serve altro: niente Node, niente Rust, niente compilazione. Sono script bash, dati JSON e markdown.
+
 ## Il wizard
 
 Sei schermate, in quest'ordine.

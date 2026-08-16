@@ -19,7 +19,14 @@ team_manifest_path() {
   fi
 }
 
+# La validità del manifest si verifica una volta per processo: ogni script
+# ne fa più letture, e riparsare il JSON a ogni team_get costava più della
+# lettura stessa.
+TEAM_MANIFEST_CHECKED=""
+
 team_require_manifest() {
+  [ -n "$TEAM_MANIFEST_CHECKED" ] && return 0
+
   local manifest
   manifest="$(team_manifest_path)"
 
@@ -34,6 +41,8 @@ team_require_manifest() {
     echo "Correggi il file a mano oppure rigeneralo con ./setup.sh." >&2
     exit 2
   fi
+
+  TEAM_MANIFEST_CHECKED=1
 }
 
 team_ids() {
