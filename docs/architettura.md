@@ -134,7 +134,7 @@ La finestra si trova per **nome sessione**, che `iterm.sh` imposta leggendolo da
 
 | Variabile | Effetto |
 |-----------|---------|
-| `OFFICE_SHARED_DIR` | Sposta `shared-context/`. È il meccanismo con cui i test si isolano, ed è rispettata anche dal watcher Rust dell'overlay |
+| `OFFICE_SHARED_DIR` | Sposta `shared-context/`. È il meccanismo con cui i test si isolano: ogni script deve rispettarla |
 | `OFFICE_TEAM_FILE` | Sposta il solo `TEAM.json` |
 | `OFFICE_CATALOG_FILE` | Sposta `catalog/roles.json` |
 | `OFFICE_AGENTS_DIR` | Dove `hire.sh` crea la cartella persona |
@@ -153,9 +153,3 @@ Questo vincolo è costato la riscrittura di `iterm.sh`, che era zsh con `typeset
 ## Hook di stato automatico
 
 `agents/claude-hooks/pre-tool.sh` (PreToolUse) e `stop.sh` (Stop) chiamano `setstatus.sh` per marcare l'agente WORKING/IDLE senza intervento manuale. Richiedono `OFFICE_AGENT=<id>` nell'ambiente; senza quella variabile escono in silenzio. Vanno registrati a mano nel `settings.json` del progetto.
-
-## office-overlay
-
-L'app Tauri che mostra gli agenti come stanza pixel-art **non** viene distribuita da `setup.sh`: vive solo in questo repo. Legge `AGENT-STATUS.json` e `MSG-LOG.jsonl` con un watcher Rust (`notify`) e emette eventi al frontend Pixi.js.
-
-Oggi ha sei agenti cablati in `src/agents.ts` e sei scrivanie fisse in `room.ts`. Continua a funzionare perché gli id di questo repo non sono cambiati con la migrazione. Fargli leggere `TEAM.json` e disporre N scrivanie è il miglioramento naturale successivo, ed è fuori dalla portata del lavoro attuale.
