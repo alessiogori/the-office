@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> Documentazione completa in [`docs/`](docs/README.md): guida introduttiva, catalogo dei
+> ruoli, reference dei comandi, architettura, anime, testing.
+
 ## Cos'è questo repo
 
 Due cose in un solo repo:

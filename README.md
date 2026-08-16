@@ -258,6 +258,20 @@ Questo repo include file di configurazione per altri tool:
 
 Copia il file rilevante nel tuo progetto se usi quei tool.
 
+## Documentazione
+
+Guide complete in [`docs/`](docs/README.md):
+
+| Documento | Contenuto |
+|-----------|-----------|
+| [Guida introduttiva](docs/getting-started.md) | Dal clone al primo agente avviato |
+| [Catalogo dei ruoli](docs/catalogo-ruoli.md) | Le 36 figure, con confini e attriti |
+| [Comandi](docs/comandi.md) | Reference di tutti gli script |
+| [Architettura](docs/architettura.md) | Come è fatto, e perché così |
+| [Le anime](docs/anime.md) | Cos'è un SOUL.md e come si scrive |
+| [Estendere il catalogo](docs/estendere-il-catalogo.md) | Aggiungere una figura |
+| [Testing](docs/testing.md) | La suite bats |
+
 ## Licenza
 
 MIT — usalo come vuoi.
