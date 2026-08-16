@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "team": [
+    { "id": "alessio", "name": "Alessio", "role": "ceo", "label": "CEO / Founder",
+      "folder": "agents/ceo", "log": null, "color": "#f5b400", "coordinator": true },
+    { "id": "stefano", "name": "Stefano", "role": "engineer", "label": "Engineer (full-stack)",
+      "folder": "agents/engineer", "log": "BUILD-LOG.md", "color": "#4a90e2", "coordinator": false },
+    { "id": "walter", "name": "Walter", "role": "product", "label": "Product Manager",
+      "folder": "agents/product", "log": "BACKLOG.md", "color": "#9b59b6", "coordinator": false },
+    { "id": "veronica", "name": "Veronica", "role": "marketing", "label": "Marketing & Documentation",
+      "folder": "agents/marketing", "log": "CONTENT-CALENDAR.md", "color": "#e74c3c", "coordinator": false },
+    { "id": "alessandra", "name": "Alessandra", "role": "uiux", "label": "UI/UX Specialist",
+      "folder": "agents/uiux", "log": "UI-REVIEW-LOG.md", "color": "#1abc9c", "coordinator": false },
+    { "id": "marwen", "name": "Marwen", "role": "tester", "label": "Tester / QA",
+      "folder": "agents/tester", "log": "BUG-LOG.md", "color": "#2ecc71", "coordinator": false }
+  ]
+}
