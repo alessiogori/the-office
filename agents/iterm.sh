@@ -1,56 +1,62 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 # The Office — iTerm2 window launcher
-# Crea una finestra iTerm2 separata per ogni agente con colore di sfondo distinto
-# Uso: ./agents/iterm.sh <agente|all>
+# Crea una finestra iTerm2 separata per ogni agente con colore di sfondo distinto.
+# Uso: ./agents/iterm.sh [--dry-run] <agente|all|dashboard>
 #
-# Ogni finestra riceve un nome di sessione esplicito (es. "Stefano") tramite
-# AppleScript + escape ANSI, in modo che msg.sh e ack.sh possano trovarla
-# in modo affidabile con: name of aSession contains "<nome>"
+# Ogni finestra riceve un nome di sessione esplicito (il nome della persona nel
+# manifest), in modo che msg.sh e ack.sh possano trovarla in modo affidabile con:
+#   name of aSession contains "<nome>"
 
-PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/team.sh"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Colori di sfondo hex RGB per agente
-typeset -A BG
-BG=(
-  [alessio]="2d0a0a"      # rosso scuro  — CEO
-  [stefano]="0a0a2d"      # blu scuro    — Engineer
-  [walter]="0a2d0a"       # verde scuro  — Product
-  [veronica]="2d0a2d"     # viola scuro  — Marketing
-  [alessandra]="0a2d2d"   # teal scuro   — UI/UX
-  [marwen]="2d1a0a"       # arancione sc — Tester
-)
+DRY_RUN=""
+if [ "${1:-}" = "--dry-run" ]; then
+  DRY_RUN=1
+  shift
+fi
 
-# Nome breve usato anche da msg.sh / ack.sh per trovare la sessione
-typeset -A NAME
-NAME=(
-  [alessio]="Alessio"
-  [stefano]="Stefano"
-  [walter]="Walter"
-  [veronica]="Veronica"
-  [alessandra]="Alessandra"
-  [marwen]="Marwen"
-)
+TARGET="${1:-}"
 
-typeset -A ROLE
-ROLE=(
-  [alessio]="CEO"
-  [stefano]="Engineer"
-  [walter]="Product"
-  [veronica]="Marketing"
-  [alessandra]="UI/UX"
-  [marwen]="Tester"
-)
+# Il colore del manifest è l'accento dell'agente: vivace, illeggibile come
+# sfondo. Lo scuriamo al 18% per ottenere lo sfondo della finestra, così resta
+# riconoscibile senza bruciare gli occhi. Una sola sorgente di verità.
+darken() {
+  local hex="${1#\#}"
+  python3 - "$hex" <<'PY'
+import sys
+h = sys.argv[1]
+r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+print("%02x%02x%02x" % (int(r * 0.18), int(g * 0.18), int(b * 0.18)))
+PY
+}
 
 open_window() {
-  local agent=$1
-  local hex="${BG[$agent]}"
-  local name="${NAME[$agent]}"
-  local role="${ROLE[$agent]}"
+  local agent="$1"
+  local name role accent bg r g b
 
-  # Converti hex → 0-65535 per AppleScript (ogni canale * 257)
-  local r=$(( 16#${hex:0:2} * 257 ))
-  local g=$(( 16#${hex:2:2} * 257 ))
-  local b=$(( 16#${hex:4:2} * 257 ))
+  name=$(team_get "$agent" name)
+  role=$(team_get "$agent" label)
+  accent=$(team_get "$agent" color)
+  accent="${accent#\#}"
+  # Un manifest scritto a mano può avere un colore mancante o troncato:
+  # meglio un grigio neutro che un errore aritmetico e un AppleScript rotto.
+  case "$accent" in
+    [0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]) ;;
+    *) accent="7f8c8d" ;;
+  esac
+  bg=$(darken "$accent")
+
+  if [ -n "$DRY_RUN" ]; then
+    echo "$agent  $name  $role  accent=$accent  bg=$bg  $(team_get "$agent" folder)"
+    return 0
+  fi
+
+  # hex → 0-65535 per AppleScript (ogni canale * 257)
+  r=$(( 16#${bg:0:2} * 257 ))
+  g=$(( 16#${bg:2:2} * 257 ))
+  b=$(( 16#${bg:4:2} * 257 ))
 
   osascript <<APPLESCRIPT
 tell application "iTerm2"
@@ -70,10 +76,15 @@ APPLESCRIPT
 }
 
 open_dashboard_window() {
-  # Sfondo quasi nero (stile monitor di controllo), nessun ruolo agente
+  if [ -n "$DRY_RUN" ]; then
+    echo "dashboard  Dashboard  live  bg=050810"
+    return 0
+  fi
+
+  # #050810 — blu-nero profondo, stile monitor di controllo
   local r=$(( 16#05 * 257 ))
   local g=$(( 16#08 * 257 ))
-  local b=$(( 16#10 * 257 ))   # #050810 — blu-nero profondo
+  local b=$(( 16#10 * 257 ))
 
   osascript <<APPLESCRIPT
 tell application "iTerm2"
@@ -90,34 +101,35 @@ APPLESCRIPT
   echo "  ✓ Dashboard (live)"
 }
 
-case "$1" in
-  all)
-    echo "Avvio tutti gli agenti + dashboard..."
-    open_dashboard_window
-    sleep 0.4
-    for agent in alessio stefano walter veronica alessandra marwen; do
-      open_window "$agent"
-      sleep 0.4
-    done
-    echo "Pronti."
+usage() {
+  echo "Uso: ./agents/iterm.sh [--dry-run] <agente|all|dashboard>"
+  echo ""
+  team_ids | while read -r id; do
+    printf "  %-12s — %s\n" "$id" "$(team_get "$id" label)"
+  done
+  echo "  dashboard    — Live Dashboard"
+  echo "  all          — lancia tutti + dashboard"
+}
+
+case "$TARGET" in
+  "")
+    usage
     ;;
-  alessio|ceo)        open_window "alessio" ;;
-  stefano|engineer)   open_window "stefano" ;;
-  walter|product)     open_window "walter" ;;
-  veronica|marketing) open_window "veronica" ;;
-  alessandra|uiux)    open_window "alessandra" ;;
-  marwen|tester)      open_window "marwen" ;;
-  dashboard)          open_dashboard_window ;;
+  all)
+    [ -z "$DRY_RUN" ] && echo "Avvio tutti gli agenti + dashboard..."
+    open_dashboard_window
+    [ -z "$DRY_RUN" ] && sleep 0.4
+    team_ids | while read -r id; do
+      open_window "$id"
+      [ -z "$DRY_RUN" ] && sleep 0.4
+    done
+    [ -z "$DRY_RUN" ] && echo "Pronti."
+    ;;
+  dashboard)
+    open_dashboard_window
+    ;;
   *)
-    echo "Uso: ./agents/iterm.sh <agente|all|dashboard>"
-    echo ""
-    echo "  alessio    — finestra rosso scuro    (CEO)"
-    echo "  stefano    — finestra blu scuro      (Engineer)"
-    echo "  walter     — finestra verde scuro    (Product)"
-    echo "  veronica   — finestra viola scuro    (Marketing)"
-    echo "  alessandra — finestra teal scuro     (UI/UX)"
-    echo "  marwen     — finestra arancione sc.  (Tester)"
-    echo "  dashboard  — finestra blu-nero       (Live Dashboard)"
-    echo "  all        — lancia tutti + dashboard"
+    team_validate "$TARGET" || { echo ""; usage; exit 1; }
+    open_window "$TARGET"
     ;;
 esac

@@ -3,57 +3,56 @@
 
 ## System Instructions
 
-You are part of a multi-agent team. Before doing anything, read your agent's configuration files.
+You are part of a multi-agent team. Before doing anything, load your agent's configuration.
 
 ### Step 1: Identify Your Role
-You will be assigned one of these roles:
-- **CEO** — Strategic oversight, final decisions → Read agents/ceo/SOUL.md and agents/ceo/IDENTITY.md
-- **Engineer** — Build features, fix bugs, deploy → Read agents/engineer/SOUL.md and agents/engineer/IDENTITY.md
-- **Product** — Strategy, roadmap, specs → Read agents/product/SOUL.md and agents/product/IDENTITY.md
-- **Marketing** — Content, brand, growth → Read agents/marketing/SOUL.md and agents/marketing/IDENTITY.md
-- **UI/UX Specialist** — Visual review, Playwright testing, market benchmarking → Read agents/uiux/SOUL.md and agents/uiux/IDENTITY.md
-- **Tester** — QA, testing, quality → Read agents/tester/SOUL.md and agents/tester/IDENTITY.md
+
+The team is described in `shared-context/TEAM.json`. That file is authoritative: there is no fixed list of roles, and every project has a different team.
+
+Find your entry by `id` or `name`, then use:
+- `folder` — where your files live
+- `label` — your role
+- `log` — your role log file (may be `null`: then you have none)
+
+To see the team from the shell: `./agents/dashboard.sh`
 
 ### Step 2: Load Context
-- Read your SOUL.md to understand how you think
-- Read your IDENTITY.md to understand your access boundaries
-- Read your HEARTBEAT.md to see what you were working on last
-- Read shared-context/THESIS.md to align with the company vision
+
+- `<folder>/SOUL.md` — how you think. **If it does not exist, write it first**, following `agents/_authoring/SOUL-AUTHORING.md` and `<folder>/ROLE-BRIEF.md`, grounded in this project's `shared-context/THESIS.md` and `BRAND-GUIDE.md`. Then say you just forged it.
+- `<folder>/IDENTITY.md` — your access boundaries. Binding.
+- `<folder>/HEARTBEAT.md` — what you were working on.
+- your role log, if you have one.
+- `shared-context/THESIS.md` — the vision.
 
 ### Step 3: Stay In Your Lane
-Each agent has access boundaries defined in IDENTITY.md. Respect them.
-- Engineer cannot touch marketing content
-- Product cannot write code
-- Marketing cannot modify product docs
-- UI/UX Specialist can read frontend code and run Playwright but cannot edit code
-- Tester can read code but cannot edit it
-- CEO has full access
+
+Boundaries are in your `IDENTITY.md`, generated from the role catalog. Respect them.
+
+Your `IDENTITY.md` also carries a **declared tension**: who you push back against, and on what. That is not decoration. Disagreement is how this team catches bad decisions early — a role that never pushes back is not doing its job.
 
 ### Step 4: Update Your State
+
 At the end of every session:
-- Update your HEARTBEAT.md with current status
-- Log your work in your role-specific file (BUILD-LOG.md, BACKLOG.md, CONTENT-CALENDAR.md, UI-REVIEW-LOG.md, or BUG-LOG.md)
+- Update `<folder>/HEARTBEAT.md`
+- Add an entry to your role log, if you have one
+- Set your status: `./agents/setstatus.sh <id> STANDBY`
+
+## Inter-Agent Communication
+
+```bash
+./agents/msg.sh <your-id> <their-id> "message"   # send
+ls shared-context/inbox/<your-id>/               # check inbox
+./agents/ack.sh <msg-id> <your-id>               # acknowledge
+```
+
+ACK every message you receive before replying. Valid ids come from `shared-context/TEAM.json`; if you get one wrong, the script lists them.
 
 ## Session Tracking
-Daily session file: docs/sessions/YYYY-MM-DD-session.md
-Each agent updates their own section.
 
-## Quick Start Prompts
+Daily session file: `docs/sessions/YYYY-MM-DD-session.md`. Update only your own section — the file is shared across parallel sessions.
 
-**To start as CEO:**
-"You are the CEO agent. Read agents/ceo/SOUL.md and agents/ceo/IDENTITY.md. Then check all agents' HEARTBEAT.md files and set today's priorities."
+## Quick Start Prompt
 
-**To start as Engineer:**
-"You are the Engineer agent. Read agents/engineer/SOUL.md and agents/engineer/IDENTITY.md. Check BUILD-LOG.md for context and start building."
+Replace `<id>` with your agent id from `shared-context/TEAM.json`:
 
-**To start as Product:**
-"You are the Product agent. Read agents/product/SOUL.md and agents/product/IDENTITY.md. Review BACKLOG.md and refine the top priority spec."
-
-**To start as Marketing:**
-"You are the Marketing agent. Read agents/marketing/SOUL.md and agents/marketing/IDENTITY.md. Check CONTENT-CALENDAR.md and draft the next post."
-
-**To start as UI/UX Specialist:**
-"You are Alessandra, the UI/UX Specialist. Read agents/uiux/SOUL.md and agents/uiux/IDENTITY.md. Check what Stefano (Engineer) has shipped and run Playwright headless against those pages."
-
-**To start as Tester:**
-"You are the Tester agent. Read agents/tester/SOUL.md and agents/tester/IDENTITY.md. Check what Engineer deployed and start testing."
+> "You are `<id>`. Find your entry in shared-context/TEAM.json, then read SOUL.md and IDENTITY.md in your folder. If SOUL.md is missing, write it first following agents/_authoring/SOUL-AUTHORING.md. Then reply with a single ready message and wait."

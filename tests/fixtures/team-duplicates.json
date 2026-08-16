@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "team": [
+    { "id": "giulia", "name": "Giulia", "role": "pm", "label": "Project Manager",
+      "folder": "agents/giulia", "log": "PLAN.md", "color": "#f5b400", "coordinator": true },
+    { "id": "marco", "name": "Marco", "role": "backend", "label": "Backend Engineer",
+      "folder": "agents/marco", "log": "BUILD-LOG.md", "color": "#4a90e2", "coordinator": false },
+    { "id": "luca", "name": "Luca", "role": "backend", "label": "Backend Engineer",
+      "folder": "agents/luca", "log": "BUILD-LOG.md", "color": "#5b6ee1", "coordinator": false }
+  ]
+}

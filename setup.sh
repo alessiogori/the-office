@@ -1,113 +1,509 @@
 #!/usr/bin/env bash
+# setup.sh — Compone il team di un progetto e genera il sistema multi-agente.
+#
+# Uso:
+#   ./setup.sh                                   wizard interattivo (richiede gum)
+#   ./setup.sh --config <file> --target <dir>    non interattivo, riproducibile
+#   ./setup.sh --save-config <file>              esporta le scelte fatte
 set -euo pipefail
 
-# ─────────────────────────────────────────────
-# setup.sh — Configura il sistema multi-agente
-# per un nuovo progetto
-# ─────────────────────────────────────────────
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/agents/lib/roster.sh"
+source "$SCRIPT_DIR/agents/lib/tui.sh"
 
-echo ""
-echo "╔══════════════════════════════════════════╗"
-echo "║   the-office — Setup multi-agente        ║"
-echo "╚══════════════════════════════════════════╝"
-echo ""
-echo "Questo script copia il sistema di agenti nel tuo progetto"
-echo "e lo personalizza con le informazioni che fornisci."
-echo ""
+CONFIG_FILE=""
+WIZARD_TMP_CONFIG=""
+TARGET_DIR=""
+SAVE_CONFIG=""
+EXPORT_ROOT="$SCRIPT_DIR/exports"
+FORCE=""
 
-# ── Directory target ──────────────────────────
-read -rp "📁 Directory di destinazione (es. /Users/me/Code/mio-progetto): " TARGET_DIR
-if [[ -z "$TARGET_DIR" ]]; then
-  echo "Errore: la directory di destinazione è obbligatoria."
-  exit 1
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --config)      CONFIG_FILE="${2:-}"; shift 2 ;;
+    --target)      TARGET_DIR="${2:-}"; shift 2 ;;
+    --export-dir)  EXPORT_ROOT="${2:-}"; shift 2 ;;
+    --save-config) SAVE_CONFIG="${2:-}"; shift 2 ;;
+    --force)       FORCE=1; shift ;;
+    -h|--help)
+      cat <<'USAGE'
+Uso: ./setup.sh [opzioni]
+
+Senza opzioni: wizard interattivo. Il team viene esportato come bundle
+autonomo in exports/<nome-progetto>/, pronto da copiare in un progetto
+esistente. Nessun progetto viene toccato.
+
+  --config <file>       Legge il team da un JSON invece di chiederlo
+  --target <dir>        Installa direttamente in <dir> invece di esportare
+  --export-dir <dir>    Radice degli export (default: ./exports)
+  --save-config <file>  Salva la configurazione usata
+  --force               Consente di scrivere in una --target non vuota
+USAGE
+      exit 0 ;;
+    *) echo "Opzione sconosciuta: $1" >&2; exit 2 ;;
+  esac
+done
+
+dir_non_vuota() {
+  [ -d "$1" ] && [ -n "$(ls -A "$1" 2>/dev/null)" ]
+}
+
+# Il config temporaneo del wizard contiene i dati del progetto: non va lasciato
+# in giro in $TMPDIR.
+cleanup_tmp() {
+  [ -n "$WIZARD_TMP_CONFIG" ] && rm -f "$WIZARD_TMP_CONFIG"
+  return 0
+}
+trap cleanup_tmp EXIT
+
+# ── Validazione della configurazione ──────────────────────────────────────────
+# Team non vuoto, prima persona coordinatrice, ruoli esistenti, id univoci.
+validate_config() {
+  local config="$1"
+  python3 - "$config" "$(roster_catalog_path)" <<'PY'
+import json, sys, unicodedata, re
+
+config_path, catalog_path = sys.argv[1], sys.argv[2]
+
+try:
+    config = json.load(open(config_path))
+except Exception as e:
+    print(f"Errore: config non valida ({e}).", file=sys.stderr)
+    sys.exit(2)
+
+roles = {r["slug"]: r for r in json.load(open(catalog_path))["roles"]}
+team = config.get("team", [])
+
+if not team:
+    print("Errore: il team è vuoto. Serve almeno una persona.", file=sys.stderr)
+    sys.exit(2)
+
+def to_id(name):
+    n = unicodedata.normalize("NFKD", name)
+    n = "".join(c for c in n if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]", "", n.lower())
+
+for m in team:
+    if m.get("role") not in roles:
+        print(f"Errore: ruolo '{m.get('role')}' non presente nel catalogo.", file=sys.stderr)
+        sys.exit(2)
+    if not m.get("name"):
+        print("Errore: ogni persona deve avere un nome.", file=sys.stderr)
+        sys.exit(2)
+
+if not roles[team[0]["role"]].get("coordinator"):
+    print("Errore: la prima persona deve avere un ruolo di coordinamento.", file=sys.stderr)
+    print("Ruoli di coordinamento validi: "
+          + ", ".join(s for s, r in roles.items() if r.get("coordinator")), file=sys.stderr)
+    sys.exit(2)
+
+seen = {}
+for m in team:
+    i = to_id(m["name"])
+    if not i:
+        print(f"Errore: il nome '{m['name']}' non produce un id valido.", file=sys.stderr)
+        sys.exit(2)
+    if i in seen:
+        print(f"Errore: due persone producono lo stesso id '{i}' "
+              f"({seen[i]} e {m['name']}).", file=sys.stderr)
+        sys.exit(2)
+    seen[i] = m["name"]
+PY
+}
+
+# ── Elenco del team in markdown, una voce per persona ────────────────────────
+_team_roster_markdown() {
+  local team_json="$1"
+  python3 - "$team_json" "$(roster_catalog_path)" <<'PY'
+import json, sys
+team = json.load(open(sys.argv[1]))["team"]
+roles = {r["slug"]: r for r in json.load(open(sys.argv[2]))["roles"]}
+for m in team:
+    r = roles[m["role"]]
+    print(f"### {m['name']} — {m['label']}")
+    print(f"- **Missione:** {r['mission']}")
+    print(f"- **Può:** {r['can'][0]}")
+    print(f"- **Non può:** {r['cannot'][0]}")
+    print(f"- **Attrito:** {r['tension']}")
+    print(f"- **Config:** {m['folder']}/")
+    print()
+PY
+}
+
+# ── CLAUDE.md, AGENTS.md, GEMINI.md, generati dal team reale ─────────────────
+generate_agent_docs() {
+  local target="$1"
+  local roster
+  roster="$(_team_roster_markdown "$target/shared-context/TEAM.json")"
+
+  cat > "$target/CLAUDE.md" <<CLAUDEEOF
+# CLAUDE.md — $PROJECT_NAME
+
+## Progetto
+$PROJECT_DESC
+
+**Stack:** $TECH_STACK
+
+## Sistema multi-agente
+
+Questo progetto usa un sistema multi-agente. Il team è descritto in
+\`shared-context/TEAM.json\`: quello è l'elenco autorevole, questa sezione ne è
+il riassunto leggibile. Gli script validano gli agenti contro il manifest.
+
+$roster
+
+## Contesto condiviso
+Letto da tutti: \`shared-context/THESIS.md\`, \`ROADMAP.md\`, \`BRAND-GUIDE.md\`.
+
+## Regole
+1. Ogni agente resta nel suo dominio, definito nel suo \`IDENTITY.md\`.
+2. I disaccordi sono un bene: ogni ruolo ha un attrito dichiarato ed è tenuto a usarlo.
+3. Ogni agente legge SOUL.md e IDENTITY.md all'inizio della sessione.
+   Se SOUL.md non esiste, lo scrive seguendo \`agents/_authoring/SOUL-AUTHORING.md\`.
+4. HEARTBEAT.md va aggiornato a fine sessione.
+5. In caso di dubbio, \`shared-context/THESIS.md\`.
+
+## Comandi
+\`\`\`bash
+./agents/launch.sh <agente>       # avvia un agente
+./agents/iterm.sh <agente|all>    # finestre iTerm2 dedicate
+./agents/setstatus.sh <agente> <WORKING|IDLE|STANDBY> ["task"]
+./agents/msg.sh <da> <a> "<testo>"
+./agents/ack.sh <msg-id> <agente>
+./agents/qtask.sh <add|done|list> <agente> [...]
+./agents/dashboard.sh             # stato del team
+./agents/hire.sh                  # aggiungi una persona
+\`\`\`
+
+## Sessioni
+Un file al giorno: \`docs/sessions/YYYY-MM-DD-session.md\`. Ogni agente aggiorna
+solo la propria sezione.
+CLAUDEEOF
+
+  cat > "$target/AGENTS.md" <<AGENTSEOF
+# AGENTS.md — $PROJECT_NAME
+# Cursor, Copilot, Windsurf, Codex, Devin, Replit
+
+## Istruzioni
+
+Fai parte di un team multi-agente. Prima di qualsiasi cosa, carica il tuo ruolo.
+
+### 1. Identifica il ruolo
+Il team è in \`shared-context/TEAM.json\`. Trova la tua voce e usa il campo
+\`folder\` per sapere dove stanno i tuoi file.
+
+$roster
+
+### 2. Carica il contesto
+- \`<folder>/SOUL.md\` — come pensi. Se manca, scrivilo seguendo
+  \`agents/_authoring/SOUL-AUTHORING.md\` e \`<folder>/ROLE-BRIEF.md\`.
+- \`<folder>/IDENTITY.md\` — i tuoi confini di accesso, vincolanti
+- \`<folder>/HEARTBEAT.md\` — su cosa stavi lavorando
+- \`shared-context/THESIS.md\` — la visione
+
+### 3. Resta nel tuo dominio
+I confini sono in IDENTITY.md. Rispettali.
+
+### 4. Chiudi la sessione
+Aggiorna HEARTBEAT.md e il tuo log di ruolo, se ne hai uno.
+AGENTSEOF
+
+  cat > "$target/GEMINI.md" <<GEMINIEOF
+# GEMINI.md — $PROJECT_NAME
+
+## Istruzioni
+
+Fai parte di un team multi-agente. Il team è descritto in
+\`shared-context/TEAM.json\`; ogni persona ha una cartella indicata dal campo
+\`folder\`, con SOUL.md (come pensa), IDENTITY.md (cosa può toccare) e
+HEARTBEAT.md (a che punto è).
+
+$roster
+
+## Avvio
+1. Trova la tua voce in \`shared-context/TEAM.json\`
+2. Leggi SOUL.md e IDENTITY.md nella tua cartella. Se SOUL.md manca, scrivilo
+   seguendo \`agents/_authoring/SOUL-AUTHORING.md\`
+3. Leggi \`shared-context/THESIS.md\`
+4. Resta nei confini di IDENTITY.md
+5. A fine sessione aggiorna HEARTBEAT.md
+GEMINIEOF
+}
+
+# ── INTEGRAZIONE.md — come innestare il bundle in un progetto esistente ──────
+generate_integration_guide() {
+  local target="$1"
+  local roster people
+  roster="$(_team_roster_markdown "$target/shared-context/TEAM.json")"
+  people=$(python3 -c "
+import json,sys
+t=json.load(open(sys.argv[1]))['team']
+print(', '.join(f\"{m['name']} ({m['label']})\" for m in t))
+" "$target/shared-context/TEAM.json")
+
+  cat > "$target/INTEGRAZIONE.md" <<INTEGEOF
+# Integrare questo team in $PROJECT_NAME
+
+Bundle autonomo generato da the-office. Contiene tutto quello che serve: non
+dipende dal repo che lo ha prodotto.
+
+**Team:** $people
+
+## Se il progetto è nuovo o non ha un CLAUDE.md
+
+Copia tutto e hai finito:
+
+\`\`\`bash
+cp -R . /percorso/del/progetto/
+cd /percorso/del/progetto
+./agents/dashboard.sh
+\`\`\`
+
+## Se il progetto ha già un CLAUDE.md
+
+Copia tutto **tranne** i tre file di configurazione, poi innesta la sezione
+agenti in quello che hai già:
+
+\`\`\`bash
+PROG=/percorso/del/progetto
+
+cp -R agents catalog shared-context "\$PROG/"
+mkdir -p "\$PROG/docs/sessions"
+
+# Appendi la sezione agenti al tuo CLAUDE.md invece di sostituirlo
+sed -n '/^## Sistema multi-agente/,\$p' CLAUDE.md >> "\$PROG/CLAUDE.md"
+\`\`\`
+
+Fai lo stesso con \`AGENTS.md\` e \`GEMINI.md\` se il progetto li usa.
+
+**Attenzione a \`shared-context/\`:** contiene \`THESIS.md\`, \`ROADMAP.md\` e
+\`BRAND-GUIDE.md\` con contenuti segnaposto. Se il progetto ha già una sua
+visione o una sua guida di stile, non sovrascriverli: copia solo
+\`TEAM.json\`, \`inbox/\` e \`queues/\`.
+
+\`\`\`bash
+cp shared-context/TEAM.json "\$PROG/shared-context/"
+cp -R shared-context/inbox shared-context/queues "\$PROG/shared-context/"
+\`\`\`
+
+## Cosa stai copiando
+
+| Percorso | Cosa contiene |
+|----------|---------------|
+| \`agents/<persona>/\` | Una cartella per persona: identità, heartbeat, brief, log |
+| \`agents/lib/\` | Le librerie che leggono il team a runtime |
+| \`agents/*.sh\` | msg, ack, setstatus, qtask, hire, dashboard, launch, iterm |
+| \`agents/_authoring/\` | Le regole per scrivere un SOUL.md |
+| \`catalog/roles.json\` | Le figure disponibili, per assumere in futuro |
+| \`shared-context/TEAM.json\` | Chi c'è nel team: la sorgente di verità |
+| \`CLAUDE.md\`, \`AGENTS.md\`, \`GEMINI.md\` | Istruzioni per i vari AI tool |
+
+## Il team
+
+$roster
+
+## Dopo l'integrazione
+
+\`\`\`bash
+./agents/dashboard.sh      # verifica che il team sia visto
+./agents/iterm.sh all      # una finestra per persona (macOS + iTerm2)
+./agents/hire.sh           # aggiungi qualcuno
+\`\`\`
+
+Al primo avvio, ogni agente il cui \`SOUL.md\` non esiste se lo scrive da solo,
+leggendo il proprio \`ROLE-BRIEF.md\` e il contesto del progetto. È voluto:
+l'anima nasce calata su **questo** progetto invece che generica.
+
+## Requisiti
+
+\`bash\` 3.2+ e \`python3\`. Niente altro. \`iTerm2\` serve solo per la consegna
+dei messaggi in finestra; senza, i messaggi restano comunque su log e inbox.
+
+## Questo file
+
+Puoi cancellarlo dopo l'integrazione: serve solo al trasporto.
+INTEGEOF
+}
+
+# ── Wizard interattivo ────────────────────────────────────────────────────────
+# Raccoglie le scelte con gum e le scrive in un file di config temporaneo,
+# assegnandolo a CONFIG_FILE: da lì in poi il percorso è identico a --config.
+wizard_collect_interactive() {
+  tui_require_gum
+
+  gum style --border rounded --padding "1 3" --margin "1 0" \
+    "the-office — composizione del team"
+
+  local name desc stack brand size slug
+  while true; do
+    name=$(gum input --value "my-project" --header "Nome del progetto")
+    [ -n "$name" ] || { echo "Nome obbligatorio." >&2; exit 2; }
+    slug=$(roster_slugify "$name")
+    if [ -z "$slug" ]; then
+      gum style --foreground 196 "Da '$name' non ricavo un nome di cartella. Usa lettere o numeri."
+      continue
+    fi
+    if dir_non_vuota "$EXPORT_ROOT/$slug"; then
+      gum style --foreground 196 "Esiste già un export in $EXPORT_ROOT/$slug. Scegli un altro nome o rimuovilo."
+      continue
+    fi
+    break
+  done
+  desc=$(gum input --placeholder "Cosa fa questo progetto" --header "Descrizione breve")
+  stack=$(gum input --placeholder "Laravel, Vue, MySQL" --header "Tech stack")
+  brand=$(gum input --value "$name" --header "Nome brand")
+
+  # Quante persone. Il tetto di 12 non è arbitrario: sono 12 terminali aperti.
+  while true; do
+    size=$(gum input --value "4" --header "Quante persone servono nel team? (1-12)")
+    case "$size" in
+      ''|*[!0-9]*) gum style --foreground 196 "Inserisci un numero."; continue ;;
+    esac
+    if [ "$size" -ge 1 ] && [ "$size" -le 12 ]; then break; fi
+    gum style --foreground 196 "Il team deve avere tra 1 e 12 persone."
+  done
+
+  CONFIG_FILE="$(mktemp)"
+  WIZARD_TMP_CONFIG="$CONFIG_FILE"
+  local roles_file names_file
+  roles_file="$(mktemp)"
+  names_file="$(mktemp)"
+
+  # Persona 1: sempre un ruolo di coordinamento. Il vincolo è un passo del
+  # flusso, non una regola nascosta nella validazione.
+  local slug person_name suggested i new_id existing existing_id dup
+  slug=$(tui_pick_coordinator) || { echo "Selezione annullata." >&2; exit 2; }
+  suggested=$(tui_suggest_name 0)
+  person_name=$(tui_ask_name "$suggested")
+  [ -n "$person_name" ] || { echo "Nome obbligatorio." >&2; exit 2; }
+  while [ -z "$(roster_id_from_name "$person_name")" ]; do
+    gum style --foreground 196 "Da '$person_name' non ricavo un id. Usa lettere o numeri."
+    person_name=$(tui_ask_name "$suggested")
+    [ -n "$person_name" ] || { echo "Nome obbligatorio." >&2; exit 2; }
+  done
+  echo "$slug"        >> "$roles_file"
+  echo "$person_name" >> "$names_file"
+
+  # Persone da 2 a N: uno slot alla volta, così i duplicati di ruolo
+  # funzionano senza casi speciali.
+  i=1
+  while [ "$i" -lt "$size" ]; do
+    slug=$(tui_pick_role "Persona $((i + 1)) di $size — che ruolo ha?") \
+      || { echo "Selezione annullata." >&2; exit 2; }
+    suggested=$(tui_suggest_name "$i")
+    person_name=$(tui_ask_name "$suggested")
+    [ -n "$person_name" ] || { echo "Nome obbligatorio." >&2; exit 2; }
+
+    new_id=$(roster_id_from_name "$person_name")
+    if [ -z "$new_id" ]; then
+      gum style --foreground 196 "Da '$person_name' non ricavo un id. Usa lettere o numeri."
+      continue
+    fi
+    dup=0
+    while read -r existing; do
+      existing_id=$(roster_id_from_name "$existing")
+      [ "$existing_id" = "$new_id" ] && dup=1
+    done < "$names_file"
+    if [ "$dup" -eq 1 ]; then
+      gum style --foreground 196 "Esiste già una persona con id '$new_id'. Scegli un altro nome."
+      continue
+    fi
+
+    echo "$slug"        >> "$roles_file"
+    echo "$person_name" >> "$names_file"
+    i=$((i + 1))
+  done
+
+  python3 - "$CONFIG_FILE" "$name" "$desc" "$stack" "$brand" "$roles_file" "$names_file" <<'PY'
+import json, sys
+out, name, desc, stack, brand, roles_f, names_f = sys.argv[1:8]
+roles = [l.strip() for l in open(roles_f) if l.strip()]
+names = [l.strip() for l in open(names_f) if l.strip()]
+json.dump({
+    "project": {"name": name, "description": desc, "stack": stack, "brand": brand},
+    "team": [{"role": r, "name": n} for r, n in zip(roles, names)],
+}, open(out, "w"), indent=2, ensure_ascii=False)
+PY
+
+  rm -f "$roles_file" "$names_file"
+
+  # Riepilogo e conferma: nulla viene scritto su disco prima di questo sì.
+  echo ""
+  gum style --border rounded --padding "0 2" "Team"
+  python3 - "$CONFIG_FILE" <<'PY'
+import json, sys
+for m in json.load(open(sys.argv[1]))["team"]:
+    print(f"  {m['name']:<14} {m['role']}")
+PY
+  echo ""
+  gum confirm "Esporto il bundle in $EXPORT_ROOT/$slug?" || { echo "Setup annullato."; exit 0; }
+
+  validate_config "$CONFIG_FILE"
+}
+
+# ── Raccolta della configurazione ─────────────────────────────────────────────
+if [ -n "$CONFIG_FILE" ]; then
+  [ -f "$CONFIG_FILE" ] || { echo "Errore: $CONFIG_FILE non trovato." >&2; exit 2; }
+  validate_config "$CONFIG_FILE"
+else
+  wizard_collect_interactive
 fi
 
-# Espandi ~ se presente
-TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
+PROJECT_NAME=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project']['name'])" "$CONFIG_FILE")
+PROJECT_DESC=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project']['description'])" "$CONFIG_FILE")
+TECH_STACK=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project']['stack'])" "$CONFIG_FILE")
+BRAND_NAME=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project']['brand'])" "$CONFIG_FILE")
 
-# ── Informazioni progetto ─────────────────────
-echo ""
-echo "── Informazioni progetto ──────────────────"
-read -rp "Nome del progetto [my-project]: " PROJECT_NAME
-PROJECT_NAME="${PROJECT_NAME:-my-project}"
+# ── Destinazione: export (default) o installazione diretta ────────────────────
+if [ -z "$TARGET_DIR" ]; then
+  TARGET_DIR=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['project'].get('target',''))" "$CONFIG_FILE")
+fi
 
-read -rp "Descrizione breve (cosa fa il progetto): " PROJECT_DESC
-PROJECT_DESC="${PROJECT_DESC:-Un progetto che usa il sistema multi-agente the-office.}"
+if [ -n "$TARGET_DIR" ]; then
+  # Installazione diretta: la destinazione può essere un progetto vivo.
+  EXPORT_MODE=""
+  TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
 
-read -rp "Tech stack (es. Laravel, Vue, MySQL): " TECH_STACK
-TECH_STACK="${TECH_STACK:-Da definire}"
+  if dir_non_vuota "$TARGET_DIR"; then
+    echo "" >&2
+    echo "Attenzione: $TARGET_DIR esiste ed è non vuota." >&2
+    echo "Il setup sovrascrive CLAUDE.md, AGENTS.md, GEMINI.md, .gitignore e i file" >&2
+    echo "di shared-context/ senza fonderli con quelli esistenti." >&2
 
-read -rp "Nome brand/azienda [${PROJECT_NAME}]: " BRAND_NAME
-BRAND_NAME="${BRAND_NAME:-$PROJECT_NAME}"
-
-# ── Nomi agenti ───────────────────────────────
-echo ""
-echo "── Nomi agenti (invio = mantieni default) ─"
-read -rp "CEO [Alessio]: " CEO_NAME
-CEO_NAME="${CEO_NAME:-Alessio}"
-
-read -rp "Engineer [Stefano]: " ENGINEER_NAME
-ENGINEER_NAME="${ENGINEER_NAME:-Stefano}"
-
-read -rp "Product [Walter]: " PRODUCT_NAME
-PRODUCT_NAME="${PRODUCT_NAME:-Walter}"
-
-read -rp "Marketing [Veronica]: " MARKETING_NAME
-MARKETING_NAME="${MARKETING_NAME:-Veronica}"
-
-read -rp "UI/UX [Alessandra]: " UIUX_NAME
-UIUX_NAME="${UIUX_NAME:-Alessandra}"
-
-read -rp "Tester [Marwen]: " TESTER_NAME
-TESTER_NAME="${TESTER_NAME:-Marwen}"
-
-# ── Validazione directory target ──────────────
-echo ""
-if [[ -d "$TARGET_DIR" ]]; then
-  if [[ -n "$(ls -A "$TARGET_DIR" 2>/dev/null)" ]]; then
-    echo "⚠️  La directory '$TARGET_DIR' esiste ed è non vuota."
-    read -rp "   Continuare comunque? I file esistenti potrebbero essere sovrascritti [s/N]: " CONFIRM
-    CONFIRM="${CONFIRM:-N}"
-    if [[ "$(echo "$CONFIRM" | tr '[:upper:]' '[:lower:]')" != "s" ]]; then
-      echo "Setup annullato."
-      exit 0
+    if [ -n "$FORCE" ]; then
+      echo "Procedo comunque (--force)." >&2
+    elif [ -t 0 ] && [ -z "$CONFIG_FILE" ]; then
+      printf "Continuare? [s/N]: " >&2
+      read -r conferma
+      if [ "$(echo "$conferma" | tr '[:upper:]' '[:lower:]')" != "s" ]; then
+        echo "Setup annullato." >&2
+        exit 0
+      fi
+    else
+      echo "" >&2
+      echo "Rilancia con --force se è quello che vuoi, oppure ometti --target per" >&2
+      echo "generare un bundle in exports/ e innestarlo a mano." >&2
+      exit 2
     fi
   fi
 else
-  read -rp "La directory '$TARGET_DIR' non esiste. Crearla? [S/n]: " CREATE_DIR
-  CREATE_DIR="${CREATE_DIR:-S}"
-  if [[ "$(echo "$CREATE_DIR" | tr '[:upper:]' '[:lower:]')" == "s" ]]; then
-    mkdir -p "$TARGET_DIR"
-    echo "✓ Directory creata."
-  else
-    echo "Setup annullato."
-    exit 0
+  # Export: destinazione sempre nuova, nessun progetto esistente coinvolto.
+  EXPORT_MODE=1
+  PROJECT_SLUG=$(roster_slugify "$PROJECT_NAME")
+  [ -n "$PROJECT_SLUG" ] || { echo "Errore: il nome progetto '$PROJECT_NAME' non produce uno slug valido." >&2; exit 2; }
+  TARGET_DIR="$EXPORT_ROOT/$PROJECT_SLUG"
+
+  if dir_non_vuota "$TARGET_DIR"; then
+    echo "Errore: l'export '$TARGET_DIR' esiste già e non è vuoto." >&2
+    echo "Un bundle non viene sovrascritto: rimuovilo, oppure usa un nome progetto diverso." >&2
+    exit 2
   fi
 fi
 
-# ── Crea struttura directory ──────────────────
-echo ""
-echo "Creazione struttura directory..."
-
-mkdir -p "$TARGET_DIR/agents/ceo"
-mkdir -p "$TARGET_DIR/agents/engineer"
-mkdir -p "$TARGET_DIR/agents/product"
-mkdir -p "$TARGET_DIR/agents/marketing"
-mkdir -p "$TARGET_DIR/agents/uiux"
-mkdir -p "$TARGET_DIR/agents/tester"
-mkdir -p "$TARGET_DIR/shared-context"
-mkdir -p "$TARGET_DIR/examples/engineering"
-mkdir -p "$TARGET_DIR/examples/marketing"
-mkdir -p "$TARGET_DIR/examples/product"
-mkdir -p "$TARGET_DIR/docs/sessions"
-
-echo "✓ Struttura directory pronta."
-
-# ── Genera shared-context/ ────────────────────
-echo ""
-echo "Generazione shared-context..."
+# ── Struttura ─────────────────────────────────────────────────────────────────
+mkdir -p "$TARGET_DIR/agents/lib" "$TARGET_DIR/agents/_authoring" \
+         "$TARGET_DIR/shared-context/inbox" "$TARGET_DIR/shared-context/queues" \
+         "$TARGET_DIR/catalog" "$TARGET_DIR/docs/sessions"
 
 cat > "$TARGET_DIR/shared-context/THESIS.md" << EOF
 # Thesis — What We Believe
@@ -191,296 +587,104 @@ $BRAND_NAME
 - Ammetti quando non abbiamo la risposta
 EOF
 
-echo "✓ shared-context/ generato."
 
-# ── Genera file root ──────────────────────────
-echo ""
-echo "Generazione file di configurazione..."
+# ── Persone e manifest ────────────────────────────────────────────────────────
+if [ -s "$TARGET_DIR/shared-context/TEAM.json" ] && [ -z "$FORCE" ]; then
+  echo "Errore: $TARGET_DIR/shared-context/TEAM.json esiste già." >&2
+  echo "Rigenerare azzererebbe il team, lasciando orfane le cartelle degli agenti." >&2
+  echo "Per aggiungere una persona usa ./agents/hire.sh; per rifare tutto usa --force." >&2
+  exit 2
+fi
+echo '{"version":1,"team":[]}' > "$TARGET_DIR/shared-context/TEAM.json"
 
-cat > "$TARGET_DIR/CLAUDE.md" << EOF
-# CLAUDE.md — Master Configuration
+COUNT=$(python3 -c "import json,sys; print(len(json.load(open(sys.argv[1]))['team']))" "$CONFIG_FILE")
+i=0
+while [ "$i" -lt "$COUNT" ]; do
+  SLUG=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['team'][$i]['role'])" "$CONFIG_FILE")
+  NAME=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['team'][$i]['name'])" "$CONFIG_FILE")
+  ID=$(roster_id_from_name "$NAME")
+  COLOR=$(roster_next_color "$TARGET_DIR/shared-context/TEAM.json")
 
-## Project Overview
-**$PROJECT_NAME** — $PROJECT_DESC
+  roster_generate_person "$SLUG" "$NAME" "$ID" "$TARGET_DIR/agents" "$TARGET_DIR/shared-context/TEAM.json"
 
-Questo progetto usa un sistema multi-agente. Ogni agente ha un ruolo definito, una personalità e confini di accesso. Gli agenti coordinano attraverso file condivisi, non comunicazione diretta.
+  LABEL=$(roster_role_get "$SLUG" label)
+  LOG=$(roster_role_get "$SLUG" log)
+  COORD=$(roster_role_get "$SLUG" coordinator)
 
-## Agent Roles
+  python3 - "$TARGET_DIR/shared-context/TEAM.json" "$ID" "$NAME" "$SLUG" "$LABEL" "$LOG" "$COLOR" "$COORD" <<'PY'
+import json, os, sys
+path, id_, name, role, label, log, color, coord = sys.argv[1:9]
+data = json.load(open(path))
+data["team"].append({
+    "id": id_, "name": name, "role": role, "label": label,
+    "folder": f"agents/{id_}", "log": log or None,
+    "color": color, "coordinator": coord == "true",
+})
+tmp = path + ".tmp"
+json.dump(data, open(tmp, "w"), indent=2, ensure_ascii=False)
+os.replace(tmp, path)
+PY
 
-### CEO ($CEO_NAME)
-- **Role:** Supervisione strategica, decisioni finali, allocazione risorse
-- **Access:** Tutto. Nessuna restrizione.
-- **Config:** agents/ceo/
+  mkdir -p "$TARGET_DIR/shared-context/inbox/$ID"
+  echo "[]" > "$TARGET_DIR/shared-context/queues/$ID.json"
 
-### Engineer ($ENGINEER_NAME)
-- **Role:** Costruire feature, fixare bug, scrivere test, deployare
-- **Access:** Può leggere/scrivere codice, script, config. Non può toccare contenuti marketing o documenti di strategia prodotto.
-- **Config:** agents/engineer/
+  i=$((i + 1))
+done
 
-### Product ($PRODUCT_NAME)
-- **Role:** Strategia, roadmap, specifiche, ricerca utenti, prioritizzazione
-- **Access:** Può leggere/scrivere docs di prodotto, spec, roadmap. Non può scrivere codice direttamente.
-- **Config:** agents/product/
+echo "✓ ${COUNT} persone create."
 
-### Marketing ($MARKETING_NAME)
-- **Role:** Creazione contenuti, brand voice, strategia di crescita, social media
-- **Access:** Può leggere/scrivere solo nella cartella marketing/. Non può toccare codice o docs di prodotto.
-- **Config:** agents/marketing/
+# ── Script, librerie, catalogo ────────────────────────────────────────────────
+for s in msg.sh ack.sh setstatus.sh qtask.sh with-status.sh launch.sh iterm.sh \
+         dashboard.sh live-dashboard.sh hire.sh; do
+  cp "$SCRIPT_DIR/agents/$s" "$TARGET_DIR/agents/$s"
+  chmod +x "$TARGET_DIR/agents/$s"
+done
 
-### UI/UX Specialist ($UIUX_NAME)
-- **Role:** Review qualità visiva e interazione, test headless Playwright, benchmarking standard di mercato
-- **Access:** Può leggere tutto il codice frontend. Può eseguire Playwright. Può scrivere UI-REVIEW-LOG.md. Non può modificare il codice sorgente.
-- **Config:** agents/uiux/
+cp "$SCRIPT_DIR/agents/lib/team.sh"   "$TARGET_DIR/agents/lib/team.sh"
+cp "$SCRIPT_DIR/agents/lib/roster.sh" "$TARGET_DIR/agents/lib/roster.sh"
+cp "$SCRIPT_DIR/agents/lib/tui.sh"    "$TARGET_DIR/agents/lib/tui.sh"
+rm -rf "$TARGET_DIR/catalog/templates"
+cp -R "$SCRIPT_DIR/catalog/templates" "$TARGET_DIR/catalog/templates"
+cp "$SCRIPT_DIR/catalog/roles.json"   "$TARGET_DIR/catalog/roles.json"
+cp "$SCRIPT_DIR/catalog/SOUL-AUTHORING.md" "$TARGET_DIR/agents/_authoring/SOUL-AUTHORING.md"
 
-### Tester ($TESTER_NAME)
-- **Role:** QA, testing, bug reporting, quality enforcement
-- **Access:** Può leggere tutto il codice. Può scrivere report di test e bug log. Non può modificare il codice sorgente.
-- **Config:** agents/tester/
+# catalog/souls/ NON viene copiato: le anime dei ruoli scelti sono già state
+# scritte nelle cartelle persona da roster_generate_person.
 
-## Tech Stack
-$TECH_STACK
+if [ -f "$SCRIPT_DIR/.gitignore" ]; then
+  cp "$SCRIPT_DIR/.gitignore" "$TARGET_DIR/.gitignore"
+fi
 
-## Shared Context
-Tutti gli agenti hanno accesso in lettura a shared-context/:
-- THESIS.md — visione e valori del progetto
-- ROADMAP.md — roadmap prodotto corrente
-- BRAND-GUIDE.md — regole di voce, tono e stile
+echo "✓ Script, librerie e catalogo copiati."
 
-## Session Tracking
-Ogni giorno genera un file di sessione: docs/sessions/YYYY-MM-DD-session.md
-Ogni agente aggiorna la propria sezione. Un file da rivedere, non cinque.
+# ── Documenti di configurazione ───────────────────────────────────────────────
+generate_agent_docs "$TARGET_DIR"
+echo "✓ CLAUDE.md, AGENTS.md e GEMINI.md generati."
 
-## Rules
-1. Gli agenti restano nel loro ruolo. Nessun attraversamento dei confini di accesso.
-2. I disaccordi sono positivi. Il tester dovrebbe sfidare l'engineer. Il product lead dovrebbe spingere contro il CEO.
-3. Ogni agente legge il suo SOUL.md e IDENTITY.md all'inizio di ogni sessione.
-4. HEARTBEAT.md viene aggiornato al termine di ogni sessione.
-5. In caso di dubbio, controlla shared-context/THESIS.md per allineamento.
+if [ -n "$SAVE_CONFIG" ]; then
+  cp "$CONFIG_FILE" "$SAVE_CONFIG"
+  echo "✓ Configurazione salvata in $SAVE_CONFIG"
+fi
 
-## Slash Commands
-- /startup — scegli il tuo ruolo e carica il contesto
-- /engineer — passa all'Engineer
-- /product — passa al Product
-- /marketing — passa al Marketing
-- /tester-agent — passa al Tester
-- /session — aggiorna la tua sezione nel file di sessione condiviso
-- /wrap-up — riepilogo fine giornata
-EOF
-
-cat > "$TARGET_DIR/AGENTS.md" << EOF
-# AGENTS.md — Multi-Platform Agent Configuration
-# Works with: Cursor, Copilot, Windsurf, Codex, Devin, Replit
-
-## System Instructions
-
-Sei parte di un team multi-agente. Prima di fare qualsiasi cosa, leggi i file di configurazione del tuo agente.
-
-### Step 1: Identifica il tuo ruolo
-Ti verrà assegnato uno di questi ruoli:
-- **CEO** — Supervisione strategica, decisioni finali → Leggi agents/ceo/SOUL.md e agents/ceo/IDENTITY.md
-- **Engineer** — Costruisce feature, fixa bug, deploya → Leggi agents/engineer/SOUL.md e agents/engineer/IDENTITY.md
-- **Product** — Strategia, roadmap, specifiche → Leggi agents/product/SOUL.md e agents/product/IDENTITY.md
-- **Marketing** — Contenuti, brand, crescita → Leggi agents/marketing/SOUL.md e agents/marketing/IDENTITY.md
-- **UI/UX Specialist** — Review visiva, test Playwright, benchmarking → Leggi agents/uiux/SOUL.md e agents/uiux/IDENTITY.md
-- **Tester** — QA, testing, qualità → Leggi agents/tester/SOUL.md e agents/tester/IDENTITY.md
-
-### Step 2: Carica il contesto
-- Leggi il tuo SOUL.md per capire come pensi
-- Leggi il tuo IDENTITY.md per capire i tuoi confini di accesso
-- Leggi il tuo HEARTBEAT.md per vedere su cosa stavi lavorando
-- Leggi shared-context/THESIS.md per allineamento con la visione
-
-### Step 3: Resta nel tuo ruolo
-Ogni agente ha confini di accesso definiti in IDENTITY.md. Rispettali.
-
-### Step 4: Aggiorna il tuo stato
-Al termine di ogni sessione:
-- Aggiorna il tuo HEARTBEAT.md con lo stato corrente
-- Registra il tuo lavoro nel file specifico del tuo ruolo
-
-## Quick Start Prompts
-
-**Per iniziare come CEO:**
-"Sei l'agente CEO. Leggi agents/ceo/SOUL.md e agents/ceo/IDENTITY.md. Controlla tutti i HEARTBEAT.md degli agenti e imposta le priorità di oggi."
-
-**Per iniziare come Engineer:**
-"Sei l'agente Engineer. Leggi agents/engineer/SOUL.md e agents/engineer/IDENTITY.md. Controlla BUILD-LOG.md per il contesto e inizia a costruire."
-
-**Per iniziare come Product:**
-"Sei l'agente Product. Leggi agents/product/SOUL.md e agents/product/IDENTITY.md. Rivedi BACKLOG.md e raffina la spec con priorità più alta."
-
-**Per iniziare come Marketing:**
-"Sei l'agente Marketing. Leggi agents/marketing/SOUL.md e agents/marketing/IDENTITY.md. Controlla CONTENT-CALENDAR.md e bozza il prossimo post."
-
-**Per iniziare come UI/UX Specialist:**
-"Sei $UIUX_NAME, la UI/UX Specialist. Leggi agents/uiux/SOUL.md e agents/uiux/IDENTITY.md. Controlla cosa ha shippato $ENGINEER_NAME e lancia Playwright headless su quelle pagine."
-
-**Per iniziare come Tester:**
-"Sei l'agente Tester. Leggi agents/tester/SOUL.md e agents/tester/IDENTITY.md. Controlla cosa ha deployato l'Engineer e inizia a testare."
-EOF
-
-sed \
-  -e "s/Alessio/$CEO_NAME/g" \
-  -e "s/Stefano/$ENGINEER_NAME/g" \
-  -e "s/Walter/$PRODUCT_NAME/g" \
-  -e "s/Veronica/$MARKETING_NAME/g" \
-  -e "s/Alessandra/$UIUX_NAME/g" \
-  -e "s/Marwen/$TESTER_NAME/g" \
-  -e "s/5-agent system/6-agent system/g" \
-  "$SCRIPT_DIR/GEMINI.md" > "$TARGET_DIR/GEMINI.md"
-
-cp "$SCRIPT_DIR/.gitignore" "$TARGET_DIR/.gitignore"
-
-echo "✓ CLAUDE.md, AGENTS.md, GEMINI.md, .gitignore generati."
-
-# ── Genera agents/msg.sh e agents/ack.sh ─────
-echo ""
-echo "Generazione agents/msg.sh e agents/ack.sh..."
-
-CEO_LOWER=$(echo "$CEO_NAME" | tr '[:upper:]' '[:lower:]')
-ENGINEER_LOWER=$(echo "$ENGINEER_NAME" | tr '[:upper:]' '[:lower:]')
-PRODUCT_LOWER=$(echo "$PRODUCT_NAME" | tr '[:upper:]' '[:lower:]')
-MARKETING_LOWER=$(echo "$MARKETING_NAME" | tr '[:upper:]' '[:lower:]')
-UIUX_LOWER=$(echo "$UIUX_NAME" | tr '[:upper:]' '[:lower:]')
-TESTER_LOWER=$(echo "$TESTER_NAME" | tr '[:upper:]' '[:lower:]')
-
-# msg.sh è già scritto con i nomi di default — sostituiamo i nomi agenti
-sed \
-  -e "s/alessio/$CEO_LOWER/g" \
-  -e "s/stefano/$ENGINEER_LOWER/g" \
-  -e "s/walter/$PRODUCT_LOWER/g" \
-  -e "s/veronica/$MARKETING_LOWER/g" \
-  -e "s/alessandra/$UIUX_LOWER/g" \
-  -e "s/marwen/$TESTER_LOWER/g" \
-  -e "s/Alessio/$CEO_NAME/g" \
-  -e "s/Stefano/$ENGINEER_NAME/g" \
-  -e "s/Walter/$PRODUCT_NAME/g" \
-  -e "s/Veronica/$MARKETING_NAME/g" \
-  -e "s/Alessandra/$UIUX_NAME/g" \
-  -e "s/Marwen/$TESTER_NAME/g" \
-  "$SCRIPT_DIR/agents/msg.sh" > "$TARGET_DIR/agents/msg.sh"
-
-chmod +x "$TARGET_DIR/agents/msg.sh"
-
-# Copia ack.sh (è già parametrizzato — usa il log per ricavare mittente/destinatario)
-cp "$SCRIPT_DIR/agents/ack.sh" "$TARGET_DIR/agents/ack.sh"
-chmod +x "$TARGET_DIR/agents/ack.sh"
-
-echo "✓ agents/msg.sh e agents/ack.sh generati."
-
-# ── Copia launch.sh ───────────────────────────
-echo ""
-echo "Copia agents/launch.sh..."
-
-sed \
-  -e "s/alessio/$CEO_LOWER/g" \
-  -e "s/stefano/$ENGINEER_LOWER/g" \
-  -e "s/walter/$PRODUCT_LOWER/g" \
-  -e "s/veronica/$MARKETING_LOWER/g" \
-  -e "s/alessandra/$UIUX_LOWER/g" \
-  -e "s/marwen/$TESTER_LOWER/g" \
-  -e "s/Alessio/$CEO_NAME/g" \
-  -e "s/Stefano/$ENGINEER_NAME/g" \
-  -e "s/Walter/$PRODUCT_NAME/g" \
-  -e "s/Veronica/$MARKETING_NAME/g" \
-  -e "s/Alessandra/$UIUX_NAME/g" \
-  -e "s/Marwen/$TESTER_NAME/g" \
-  "$SCRIPT_DIR/agents/launch.sh" > "$TARGET_DIR/agents/launch.sh"
-
-chmod +x "$TARGET_DIR/agents/launch.sh"
-echo "✓ agents/launch.sh copiato."
-
-# ── Copia e trasforma file agenti ─────────────
-echo ""
-echo "Copia file agenti..."
-
-substitute_names() {
-  local SRC="$1"
-  local DST="$2"
-  sed \
-    -e "s/Alessio/$CEO_NAME/g" \
-    -e "s/Stefano/$ENGINEER_NAME/g" \
-    -e "s/Walter/$PRODUCT_NAME/g" \
-    -e "s/Veronica/$MARKETING_NAME/g" \
-    -e "s/Alessandra/$UIUX_NAME/g" \
-    -e "s/Marwen/$TESTER_NAME/g" \
-    -e "s/alessio/$CEO_LOWER/g" \
-    -e "s/stefano/$ENGINEER_LOWER/g" \
-    -e "s/walter/$PRODUCT_LOWER/g" \
-    -e "s/veronica/$MARKETING_LOWER/g" \
-    -e "s/alessandra/$UIUX_LOWER/g" \
-    -e "s/marwen/$TESTER_LOWER/g" \
-    "$SRC" > "$DST"
-}
-
-# CEO
-substitute_names "$SCRIPT_DIR/agents/ceo/SOUL.md"      "$TARGET_DIR/agents/ceo/SOUL.md"
-substitute_names "$SCRIPT_DIR/agents/ceo/IDENTITY.md"  "$TARGET_DIR/agents/ceo/IDENTITY.md"
-
-# Engineer
-substitute_names "$SCRIPT_DIR/agents/engineer/SOUL.md"     "$TARGET_DIR/agents/engineer/SOUL.md"
-substitute_names "$SCRIPT_DIR/agents/engineer/IDENTITY.md" "$TARGET_DIR/agents/engineer/IDENTITY.md"
-
-# Product
-substitute_names "$SCRIPT_DIR/agents/product/SOUL.md"     "$TARGET_DIR/agents/product/SOUL.md"
-substitute_names "$SCRIPT_DIR/agents/product/IDENTITY.md" "$TARGET_DIR/agents/product/IDENTITY.md"
-
-# Marketing
-substitute_names "$SCRIPT_DIR/agents/marketing/SOUL.md"     "$TARGET_DIR/agents/marketing/SOUL.md"
-substitute_names "$SCRIPT_DIR/agents/marketing/IDENTITY.md" "$TARGET_DIR/agents/marketing/IDENTITY.md"
-
-# UI/UX
-substitute_names "$SCRIPT_DIR/agents/uiux/SOUL.md"     "$TARGET_DIR/agents/uiux/SOUL.md"
-substitute_names "$SCRIPT_DIR/agents/uiux/IDENTITY.md" "$TARGET_DIR/agents/uiux/IDENTITY.md"
-
-# Tester
-substitute_names "$SCRIPT_DIR/agents/tester/SOUL.md"     "$TARGET_DIR/agents/tester/SOUL.md"
-substitute_names "$SCRIPT_DIR/agents/tester/IDENTITY.md" "$TARGET_DIR/agents/tester/IDENTITY.md"
-
-echo "✓ SOUL.md e IDENTITY.md copiati."
-
-# ── Copia file rimanenti ──────────────────────
-echo ""
-echo "Copia file rimanenti..."
-
-# HEARTBEAT.md per ogni agente
-cp "$SCRIPT_DIR/agents/ceo/HEARTBEAT.md"       "$TARGET_DIR/agents/ceo/HEARTBEAT.md"
-cp "$SCRIPT_DIR/agents/engineer/HEARTBEAT.md"  "$TARGET_DIR/agents/engineer/HEARTBEAT.md"
-cp "$SCRIPT_DIR/agents/product/HEARTBEAT.md"   "$TARGET_DIR/agents/product/HEARTBEAT.md"
-cp "$SCRIPT_DIR/agents/marketing/HEARTBEAT.md" "$TARGET_DIR/agents/marketing/HEARTBEAT.md"
-cp "$SCRIPT_DIR/agents/uiux/HEARTBEAT.md"      "$TARGET_DIR/agents/uiux/HEARTBEAT.md"
-cp "$SCRIPT_DIR/agents/tester/HEARTBEAT.md"    "$TARGET_DIR/agents/tester/HEARTBEAT.md"
-
-# File di log specifici per ruolo
-cp "$SCRIPT_DIR/agents/engineer/BUILD-LOG.md"         "$TARGET_DIR/agents/engineer/BUILD-LOG.md"
-cp "$SCRIPT_DIR/agents/product/BACKLOG.md"            "$TARGET_DIR/agents/product/BACKLOG.md"
-cp "$SCRIPT_DIR/agents/marketing/CONTENT-CALENDAR.md" "$TARGET_DIR/agents/marketing/CONTENT-CALENDAR.md"
-cp "$SCRIPT_DIR/agents/uiux/UI-REVIEW-LOG.md"         "$TARGET_DIR/agents/uiux/UI-REVIEW-LOG.md"
-cp "$SCRIPT_DIR/agents/tester/BUG-LOG.md"             "$TARGET_DIR/agents/tester/BUG-LOG.md"
-cp "$SCRIPT_DIR/agents/tester/TEST-CHECKLIST.md"      "$TARGET_DIR/agents/tester/TEST-CHECKLIST.md"
-
-echo "✓ File di log e heartbeat copiati."
-
-# Cartella examples/
-cp -r "$SCRIPT_DIR/examples/." "$TARGET_DIR/examples/"
-echo "✓ Esempi copiati."
-
-# ── Fine ──────────────────────────────────────
-echo ""
-echo "╔══════════════════════════════════════════╗"
-echo "║   ✓ Setup completato!                    ║"
-echo "╚══════════════════════════════════════════╝"
-echo ""
-echo "Il sistema multi-agente è stato installato in:"
-echo "  $TARGET_DIR"
-echo ""
-echo "Prossimi passi:"
-echo "  1. cd $TARGET_DIR"
-echo "  2. Apri con Claude Code: claude ."
-echo "  3. Raffina shared-context/THESIS.md con la visione reale del progetto"
-echo "  4. Aggiorna shared-context/ROADMAP.md con le priorità attuali"
-echo "  5. Lancia i 6 agenti nelle finestre iTerm2"
-echo ""
-echo "Suggerimento: usa 'cat shared-context/THESIS.md' e chiedi a Claude"
-echo "di riscriverla sulla base di quello che sai del progetto."
-echo ""
+if [ -n "$EXPORT_MODE" ]; then
+  generate_integration_guide "$TARGET_DIR"
+  echo "✓ INTEGRAZIONE.md scritto."
+  echo ""
+  echo "  Bundle pronto in $TARGET_DIR"
+  echo ""
+  echo "  Per innestarlo in un progetto esistente:"
+  echo "    cat $TARGET_DIR/INTEGRAZIONE.md"
+  echo ""
+  echo "  In breve, se il progetto non ha già un CLAUDE.md:"
+  echo "    cp -R $TARGET_DIR/. /percorso/del/progetto/"
+  echo ""
+else
+  echo ""
+  echo "  Progetto generato in $TARGET_DIR"
+  echo ""
+  echo "  Prossimi passi:"
+  echo "    cd $TARGET_DIR"
+  echo "    ./agents/dashboard.sh          # chi c'è nel team"
+  echo "    ./agents/iterm.sh all          # apri un terminale per ciascuno"
+  echo ""
+fi
